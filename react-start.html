@@ -1,0 +1,1812 @@
+<title>Первый проект на React</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Unbounded:wght@500;700&display=swap">
+<style>
+/* Layout: учебник-конспект — узкая колонка шагов + липкое оглавление слева на широких экранах.
+   Акцент повторяет primary из темы MUI, которую строим в уроке: #1976d2 в светлой, #90caf9 в тёмной. */
+:root {
+  --bg: #f6f8fb;
+  --surface: #ffffff;
+  --fg: #16202e;
+  --muted: #5a6779;
+  --line: #dde3ec;
+  --accent: #1976d2;
+  --accent-soft: #e6f0fb;
+  --code-bg: #f0f3f8;
+  --warn: #9a5b00;
+  --warn-soft: #fff4e0;
+  --tk-comment: #6f7d90;
+  --tk-keyword: #a3329e;
+  --tk-string: #2e7d32;
+  --tk-tag: #1565c0;
+  --tk-attr: #8a5a00;
+  --tk-fn: #b4321f;
+  --tk-num: #00838f;
+  --font-display: "Unbounded", "Golos Text", system-ui, sans-serif;
+  --font-body: "Golos Text", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1319;
+    --surface: #161c24;
+    --fg: #e4e9f0;
+    --muted: #93a0b2;
+    --line: #273140;
+    --accent: #90caf9;
+    --accent-soft: #1a2a3c;
+    --code-bg: #121820;
+    --warn: #ffb74d;
+    --warn-soft: #2c2214;
+    --tk-comment: #7f8ba0;
+    --tk-keyword: #e39ae0;
+    --tk-string: #9ccc65;
+    --tk-tag: #90caf9;
+    --tk-attr: #ffcc80;
+    --tk-fn: #ff9e80;
+    --tk-num: #80deea;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1319;
+  --surface: #161c24;
+  --fg: #e4e9f0;
+  --muted: #93a0b2;
+  --line: #273140;
+  --accent: #90caf9;
+  --accent-soft: #1a2a3c;
+  --code-bg: #121820;
+  --warn: #ffb74d;
+  --warn-soft: #2c2214;
+  --tk-comment: #7f8ba0;
+  --tk-keyword: #e39ae0;
+  --tk-string: #9ccc65;
+  --tk-tag: #90caf9;
+  --tk-attr: #ffcc80;
+  --tk-fn: #ff9e80;
+  --tk-num: #80deea;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 64px;
+}
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 48px;
+}
+@media (min-width: 1000px) {
+  .page { grid-template-columns: 220px minmax(0, 1fr); }
+}
+
+/* ---------- Hero ---------- */
+.hero {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  padding-block: 48px 8px;
+  align-items: center;
+}
+@media (min-width: 860px) {
+  .hero { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+}
+.eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 12px;
+}
+h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(30px, 5vw, 46px);
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  margin: 0 0 16px;
+  text-wrap: balance;
+}
+.lead { color: var(--muted); font-size: 18px; margin: 0 0 24px; max-width: 34em; }
+.stack { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 0; list-style: none; }
+.stack li {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+}
+.stack li b { color: var(--accent); font-weight: 600; }
+
+/* Мини-макет итогового приложения в двух темах. Цвета здесь — буквальные цвета тем MUI,
+   у каждого окна свой фон, поэтому читается на любом фоне страницы. */
+.preview { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.preview figcaption { grid-column: 1 / -1; font-size: 13px; color: var(--muted); text-align: center; }
+.app {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  font-family: Roboto, var(--font-body);
+  font-size: 12px;
+  min-width: 0;
+}
+.app.light { --a-bg: #f5f5f5; --a-paper: #ffffff; --a-fg: #1b1b1b; --a-primary: #1976d2; --a-on: #ffffff; --a-div: #e0e0e0; }
+.app.dark  { --a-bg: #121212; --a-paper: #1e1e1e; --a-fg: #f1f1f1; --a-primary: #90caf9; --a-on: #0b1d2e; --a-div: #333333; }
+.app { background: var(--a-bg); color: var(--a-fg); }
+.app-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 10px 12px;
+  background: var(--a-paper);
+  border-bottom: 1px solid var(--a-div);
+}
+.app-title { color: var(--a-primary); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app-icon { width: 16px; height: 16px; flex: none; color: var(--a-fg); }
+.app-body { padding: 14px 12px 16px; display: grid; gap: 10px; }
+.app-card {
+  background: var(--a-paper);
+  border-radius: 4px;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.18);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.app-btn {
+  font: inherit;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+  padding: 8px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--a-primary);
+  color: var(--a-on);
+  cursor: pointer;
+}
+
+/* ---------- TOC ---------- */
+.toc { display: none; }
+@media (min-width: 1000px) {
+  .toc {
+    display: block;
+    position: sticky;
+    top: calc(env(safe-area-inset-top, 0px) + 24px);
+    align-self: start;
+    max-height: calc(100vh - 48px);
+    overflow: auto;
+    padding-top: 8px;
+  }
+}
+.toc p { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; border-left: 1px solid var(--line); }
+.toc a {
+  display: flex; gap: 10px;
+  padding: 5px 0 5px 14px;
+  margin-left: -1px;
+  border-left: 2px solid transparent;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.toc a span { font-family: var(--font-mono); font-size: 12px; min-width: 1.2em; padding-top: 1px; }
+.toc a:hover { color: var(--fg); }
+.toc a.active { color: var(--accent); border-left-color: var(--accent); font-weight: 500; }
+
+/* ---------- Content ---------- */
+main { min-width: 0; display: grid; gap: 56px; }
+section { min-width: 0; scroll-margin-top: 24px; }
+.step-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 14px; }
+.step-num {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 8px;
+  min-width: 34px; height: 34px;
+  display: inline-grid; place-items: center;
+  flex: none;
+  transform: translateY(-3px);
+}
+h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(20px, 2.6vw, 25px);
+  line-height: 1.25;
+  margin: 0;
+  text-wrap: balance;
+}
+h3 { font-size: 17px; font-weight: 600; margin: 24px 0 8px; }
+main p, main li { max-width: 68ch; }
+main p { margin: 0 0 14px; }
+main ul { margin: 0 0 14px; padding-left: 20px; display: grid; gap: 6px; }
+code:not(pre code) {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 1px 5px;
+  overflow-wrap: anywhere;
+}
+
+.code {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--code-bg);
+  margin: 0 0 16px;
+  min-width: 0;
+  overflow: hidden;
+}
+.code-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 6px 8px 6px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.code-head .file { color: var(--fg); overflow-wrap: anywhere; }
+.copy {
+  font: 500 12px var(--font-body);
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 10px;
+  cursor: pointer;
+  flex: none;
+}
+.copy:hover { color: var(--fg); border-color: var(--muted); }
+.copy.done { color: var(--tk-string); border-color: currentColor; }
+pre {
+  margin: 0;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.6;
+  tab-size: 2;
+}
+pre code { font-family: inherit; }
+
+.token.comment { color: var(--tk-comment); font-style: italic; }
+.token.keyword, .token.important, .token.atrule .rule { color: var(--tk-keyword); }
+.token.string, .token.attr-value, .token.url { color: var(--tk-string); }
+.token.tag, .token.class-name, .token.selector { color: var(--tk-tag); }
+.token.attr-name, .token.property { color: var(--tk-attr); }
+.token.function { color: var(--tk-fn); }
+.token.number, .token.boolean, .token.variable { color: var(--tk-num); }
+.token.punctuation, .token.operator { color: var(--muted); }
+
+.note {
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  background: var(--accent-soft);
+  margin: 0 0 16px;
+  max-width: 68ch;
+}
+.note p:last-child { margin-bottom: 0; }
+.note.warn { background: var(--warn-soft); }
+.note-label { font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 2px; }
+.note.warn .note-label { color: var(--warn); }
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); margin: 0 0 16px; }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+td:first-child { white-space: nowrap; }
+
+.mistakes { list-style: none; padding: 0 !important; display: grid; gap: 10px !important; }
+.mistakes li {
+  max-width: none;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.mistakes b { display: block; margin-bottom: 2px; }
+
+/* ---------- Глава 2 ---------- */
+.toc .toc-group { margin-top: 22px; }
+.toc a span { min-width: 1.9em; }
+.step-num { padding: 0 7px; }
+.chapter {
+  border-top: 2px solid var(--accent);
+  padding-top: 28px;
+  margin-top: 24px;
+}
+.chapter-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(26px, 4vw, 36px);
+  line-height: 1.15;
+  margin: 0 0 12px;
+}
+.chapter p:last-child { color: var(--muted); font-size: 17px; margin: 0; }
+.kinds {
+  list-style: none;
+  padding: 0 !important;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px !important;
+  margin: 0 0 16px;
+}
+.kinds li {
+  max-width: none;
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.kinds b { font-size: 16px; }
+.kinds p { margin: 0; font-size: 14.5px; color: var(--muted); flex: 1; }
+.kind-ex { display: flex; flex-wrap: wrap; gap: 4px; }
+.kind-dir { font-family: var(--font-mono); font-size: 12px; color: var(--accent); }
+.hooks tr.core td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.hooks tr.core { background: var(--accent-soft); }
+.rules { margin: 0 0 14px; padding-left: 22px; display: grid; gap: 6px; }
+
+/* ---------- Глава 3 ---------- */
+.cycle {
+  list-style: none; padding: 0; margin: 0 0 16px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;
+  counter-reset: none;
+}
+.cycle li {
+  max-width: none; position: relative;
+  padding: 14px 16px; border-radius: var(--radius);
+  border: 1px solid var(--line); background: var(--surface);
+  border-top: 4px solid var(--ph);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.cycle .mount, .ph.mount { --ph: var(--tk-string); }
+.cycle .update, .ph.update { --ph: var(--accent); }
+.cycle .unmount, .ph.unmount { --ph: var(--tk-fn); }
+.cycle b { font-size: 17px; }
+.cycle-en { font-family: var(--font-mono); font-size: 12px; color: var(--ph); }
+.cycle-tag { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.cycle p { margin: 6px 0 0; font-size: 14.5px; color: var(--muted); }
+@media (min-width: 700px) {
+  .cycle li:not(:last-child)::after {
+    content: "→"; position: absolute; right: -11px; top: 50%;
+    transform: translateY(-50%); color: var(--muted); font-size: 14px;
+    background: var(--bg); padding: 0 1px;
+  }
+}
+.flow { list-style: none; padding: 0; margin: 0 0 16px; display: grid; gap: 8px; counter-reset: f; max-width: 68ch; }
+.flow li {
+  counter-increment: f; max-width: none;
+  display: grid; grid-template-columns: 28px 90px 1fr; align-items: baseline; gap: 10px;
+  padding: 10px 14px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line);
+}
+.flow li::before { content: counter(f); font-family: var(--font-mono); color: var(--accent); font-weight: 600; }
+.flow b { font-family: var(--font-mono); font-size: 14px; }
+.flow span { color: var(--muted); font-size: 14.5px; }
+@media (max-width: 520px) { .flow li { grid-template-columns: 24px 1fr; } .flow span { grid-column: 2; } }
+.flow.strict li { grid-template-columns: 28px 90px 1fr; }
+.flow.strict .s-mount b { color: var(--tk-string); }
+.flow.strict .s-unmount b { color: var(--tk-fn); }
+.phase-list { list-style: none; padding: 0 !important; }
+.phase-list .ph {
+  display: inline-block; font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
+  padding: 1px 8px; border-radius: 999px; margin-right: 6px;
+  color: var(--ph); border: 1px solid var(--ph);
+}
+
+/* ---------- Схема контейнера ---------- */
+.scheme { margin: 0 0 16px; max-width: 68ch; }
+.scheme-screen { border: 2px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--bg); }
+.scheme-header { background: var(--surface); border-bottom: 1px solid var(--line); padding: 8px 0; }
+.scheme-main { padding: 12px 0 16px; }
+.scheme-box {
+  width: 70%; margin: 0 auto;
+  border: 1.5px dashed var(--accent);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-family: var(--font-mono); font-size: 12px;
+  color: var(--accent);
+  text-align: center;
+}
+.scheme-box.tall { padding-block: 28px; background: var(--accent-soft); }
+.scheme figcaption { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+/* ---------- Блок про MUI ---------- */
+.theory {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 28px clamp(16px, 3vw, 32px);
+}
+.theory .step-num { font-family: var(--font-mono); font-style: italic; }
+.theory h3:first-of-type { margin-top: 8px; }
+.reasons {
+  list-style: none;
+  padding: 0 !important;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px !important;
+  margin: 0 0 16px;
+}
+.reasons li { max-width: none; padding: 12px 14px; border-radius: var(--radius); background: var(--bg); font-size: 15px; }
+.reasons b { display: block; color: var(--accent); margin-bottom: 2px; }
+.how { display: grid; gap: 4px; margin-top: 20px; }
+.how-title { font-weight: 600; margin: 0 0 6px !important; }
+.how-title span {
+  font-family: var(--font-mono); font-size: 13px; color: var(--accent);
+  margin-right: 8px;
+}
+.compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 0 0 16px; }
+.compare div { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; }
+.compare p { margin: 0; }
+.compare b { display: block; margin-bottom: 4px; }
+
+footer { grid-column: 1 / -1; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 20px; }
+</style>
+
+<div class="page">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">FE-78 · Инструкция</p>
+      <h1>Первый проект на React</h1>
+      <p class="lead">Создаём приложение с нуля: Vite, TypeScript, стили в SCSS-модулях и Material UI со светлой и тёмной темой. Около 20 минут.</p>
+      <ul class="stack" aria-label="Стек">
+        <li><b>React</b> 19</li>
+        <li><b>TypeScript</b></li>
+        <li><b>Vite</b> 8</li>
+        <li><b>SCSS</b> Modules</li>
+        <li><b>MUI</b> 9</li>
+      </ul>
+    </div>
+    <figure class="preview" style="margin:0">
+      <div class="app light" aria-label="Пример: светлая тема">
+        <div class="app-bar"><span class="app-title">Мой первый проект</span>
+          <svg class="app-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 0 1-4.4 2.26 5.4 5.4 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+        </div>
+        <div class="app-body">
+          <div class="app-card">Счётчик: <span data-count>0</span></div>
+          <button class="app-btn" type="button" data-inc>Нажми меня</button>
+        </div>
+      </div>
+      <div class="app dark" aria-label="Пример: тёмная тема">
+        <div class="app-bar"><span class="app-title">Мой первый проект</span>
+          <svg class="app-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></svg>
+        </div>
+        <div class="app-body">
+          <div class="app-card">Счётчик: <span data-count>0</span></div>
+          <button class="app-btn" type="button" data-inc>Нажми меня</button>
+        </div>
+      </div>
+      <figcaption>Так будет выглядеть результат в светлой и тёмной теме</figcaption>
+    </figure>
+  </header>
+
+  <nav class="toc" aria-label="Оглавление">
+    <p>Глава 1 · Проект</p>
+    <ol>
+      <li><a href="#prepare"><span>0</span>Что установить</a></li>
+      <li><a href="#create"><span>1</span>Создаём проект</a></li>
+      <li><a href="#install"><span>2</span>Ставим библиотеки</a></li>
+      <li><a href="#mui"><span>i</span>Про Material UI</a></li>
+      <li><a href="#cleanup"><span>3</span>Чистим шаблон</a></li>
+      <li><a href="#theme"><span>4</span>Создаём тему</a></li>
+      <li><a href="#provider"><span>5</span>Подключаем тему</a></li>
+      <li><a href="#toggle"><span>6</span>Кнопка темы</a></li>
+      <li><a href="#layout"><span>7</span>Шапка и Layout</a></li>
+      <li><a href="#scss"><span>8</span>SCSS Modules</a></li>
+      <li><a href="#page"><span>9</span>Собираем страницу</a></li>
+      <li><a href="#commands"><span>10</span>Команды</a></li>
+      <li><a href="#cheatsheet"><span>→</span>Шпаргалка</a></li>
+      <li><a href="#mistakes"><span>!</span>Частые ошибки</a></li>
+    </ol>
+    <p class="toc-group">Глава 2 · Компоненты</p>
+    <ol>
+      <li><a href="#c-what"><span>2.1</span>Что такое компонент</a></li>
+      <li><a href="#c-props"><span>2.2</span>Props</a></li>
+      <li><a href="#c-kinds"><span>2.3</span>Виды компонентов</a></li>
+      <li><a href="#c-hooks"><span>2.4</span>Хуки</a></li>
+      <li><a href="#c-when"><span>2.5</span>Когда создавать</a></li>
+      <li><a href="#c-folders"><span>2.6</span>Где что лежит</a></li>
+      <li><a href="#c-mistakes"><span>2.7</span>Частые ошибки</a></li>
+    </ol>
+    <p class="toc-group">Глава 3 · Жизненный цикл</p>
+    <ol>
+      <li><a href="#l-phases"><span>3.1</span>Три этапа</a></li>
+      <li><a href="#l-render"><span>3.2</span>Перерисовка</a></li>
+      <li><a href="#l-effect"><span>3.3</span>Через useEffect</a></li>
+      <li><a href="#l-fetch"><span>3.4</span>Загрузка данных</a></li>
+      <li><a href="#l-class"><span>3.5</span>Классовые</a></li>
+      <li><a href="#l-mistakes"><span>3.6</span>Частые ошибки</a></li>
+    </ol>
+    <p class="toc-group">Глава 4 · Навигация</p>
+    <ol>
+      <li><a href="#r-why"><span>4.1</span>Зачем роутер</a></li>
+      <li><a href="#r-setup"><span>4.2</span>Подключаем</a></li>
+      <li><a href="#r-routes"><span>4.3</span>Маршруты</a></li>
+      <li><a href="#r-outlet"><span>4.4</span>Outlet</a></li>
+      <li><a href="#r-links"><span>4.5</span>Ссылки и меню</a></li>
+      <li><a href="#r-params"><span>4.6</span>Параметры</a></li>
+      <li><a href="#r-404"><span>4.7</span>Страница 404</a></li>
+      <li><a href="#r-structure"><span>4.8</span>Структура</a></li>
+      <li><a href="#r-mistakes"><span>4.9</span>Частые ошибки</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <section id="prepare">
+      <div class="step-head"><span class="step-num">0</span><h2>Что должно быть установлено</h2></div>
+      <ul>
+        <li><b>Node.js</b> версии 20.19+ или 22+. Проверить: <code>node -v</code></li>
+        <li><b>VS Code</b> (желательно)</li>
+      </ul>
+    </section>
+
+    <section id="create">
+      <div class="step-head"><span class="step-num">1</span><h2>Создаём проект</h2></div>
+      <div class="code"><div class="code-head"><span class="file">Терминал</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-bash">npm create vite@latest my-app -- --template react-ts
+cd my-app
+npm install
+npm run dev</code></pre></div>
+      <p>Откройте адрес из терминала (обычно <code>http://localhost:5173</code>). Должна появиться стартовая страница Vite.</p>
+      <div class="note"><span class="note-label">Подсказка</span><p><code>my-app</code> — название папки проекта, можно заменить на своё.</p></div>
+    </section>
+
+    <section id="install">
+      <div class="step-head"><span class="step-num">2</span><h2>Ставим библиотеки</h2></div>
+      <div class="code"><div class="code-head"><span class="file">Терминал</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-bash"># Material UI + его движок стилей + иконки
+npm install @mui/material @emotion/react @emotion/styled @mui/icons-material
+
+# Поддержка SCSS (только для разработки)
+npm install -D sass-embedded</code></pre></div>
+      <p>Больше ничего настраивать не нужно: Vite сам понимает <code>.scss</code> и <code>.module.scss</code>.</p>
+    </section>
+
+    <section id="mui" class="theory">
+      <div class="step-head"><span class="step-num">i</span><h2>Про Material UI: зачем и как</h2></div>
+      <p><b>Material UI (MUI)</b> — библиотека готовых React-компонентов в стиле Material Design от Google. Документация: <a href="https://mui.com/material-ui/all-components/" target="_blank" rel="noopener">mui.com/material-ui/all-components</a></p>
+
+      <h3>Зачем мы его используем</h3>
+      <ul class="reasons">
+        <li><b>Не верстаем с нуля</b>Кнопки, поля ввода, карточки, модальные окна, таблицы и меню уже готовы и хорошо выглядят.</li>
+        <li><b>Единый стиль</b>Компоненты сочетаются друг с другом: одинаковые отступы, шрифты, скругления.</li>
+        <li><b>Темы</b>Цвета задаются в одном месте (<code>theme.ts</code>), и тёмная тема сразу работает для всех компонентов.</li>
+        <li><b>Доступность</b>Работа с клавиатуры, фокус и <code>aria</code>-атрибуты уже настроены.</li>
+        <li><b>Популярность</b>Большое сообщество, подробная документация с примерами, часто встречается в реальных проектах.</li>
+      </ul>
+
+      <h3>Как использовать</h3>
+      <div class="how">
+        <p class="how-title"><span>1</span>Импортируем компонент из <code>@mui/material</code> и используем как обычный React-компонент</p>
+        <p class="how-title"><span>2</span>Настраиваем через props</p>
+        <p>У большинства компонентов есть <code>variant</code>, <code>color</code>, <code>size</code>, <code>disabled</code>:</p>
+        <div class="code"><div class="code-head"><span class="file">Варианты кнопок</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { Button, Stack } from '@mui/material';
+
+&lt;Stack direction="row" spacing={2}&gt;
+  &lt;Button variant="text"&gt;Text&lt;/Button&gt;
+  &lt;Button variant="outlined"&gt;Outlined&lt;/Button&gt;
+  &lt;Button variant="contained"&gt;Contained&lt;/Button&gt;
+  &lt;Button variant="contained" color="error" size="small"&gt;Удалить&lt;/Button&gt;
+&lt;/Stack&gt;</code></pre></div>
+        <p class="how-title"><span>3</span>Быстрые стили через <code>sx</code></p>
+        <p>Это проп со стилями, который понимает значения из темы. Число в отступах умножается на 8px:</p>
+        <div class="code"><div class="code-head"><span class="file">Проп sx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { Box } from '@mui/material';
+
+&lt;Box
+  sx={{
+    p: 2,                       // padding: 16px (2 × 8px)
+    mt: 1,                      // margin-top: 8px
+    bgcolor: 'primary.main',    // цвет из темы
+    color: 'primary.contrastText',
+    borderRadius: 1,
+    '&amp;:hover': { opacity: 0.8 },
+  }}
+&gt;
+  Блок со стилями через sx
+&lt;/Box&gt;</code></pre></div>
+        <p class="how-title"><span>4</span>Собираем вместе</p>
+        <p>Пример маленькой формы: поле ввода, кнопка с иконкой и текст, который меняется при вводе.</p>
+        <div class="code"><div class="code-head"><span class="file">src/components/MuiDemo.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { useState } from 'react';
+import { Box, Button, Stack, TextField, Typography } from '@mui/material';
+import SendIcon from '@mui/icons-material/Send';
+
+export const MuiDemo = () =&gt; {
+  const [name, setName] = useState('');
+
+  return (
+    &lt;Box sx={{ p: 3, bgcolor: 'background.paper', borderRadius: 2 }}&gt;
+      &lt;Typography variant="h5" gutterBottom&gt;
+        Привет, {name || 'гость'}!
+      &lt;/Typography&gt;
+
+      &lt;Stack direction="row" spacing={2}&gt;
+        &lt;TextField
+          label="Ваше имя"
+          size="small"
+          value={name}
+          onChange={(e) =&gt; setName(e.target.value)}
+        /&gt;
+        &lt;Button
+          variant="contained"
+          endIcon={&lt;SendIcon /&gt;}
+          disabled={!name}
+          onClick={() =&gt; alert(`Отправлено: ${name}`)}
+        &gt;
+          Отправить
+        &lt;/Button&gt;
+      &lt;/Stack&gt;
+    &lt;/Box&gt;
+  );
+};</code></pre></div>
+      </div>
+
+      <h3>Самые нужные компоненты</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Компонент</th><th>Для чего</th></tr></thead>
+        <tbody>
+          <tr><td><code>Box</code></td><td>универсальный контейнер (как <code>div</code>, но с <code>sx</code>)</td></tr>
+          <tr><td><code>Stack</code></td><td>элементы в ряд или столбик с отступом <code>spacing</code></td></tr>
+          <tr><td><code>Grid</code></td><td>сетка и адаптивная раскладка</td></tr>
+          <tr><td><code>Container</code></td><td>ограничивает ширину контента и ставит его по центру</td></tr>
+          <tr><td><code>AppBar</code>, <code>Toolbar</code></td><td>шапка сайта</td></tr>
+          <tr><td><code>Typography</code></td><td>текст: заголовки <code>h1</code>–<code>h6</code>, <code>body1</code>, <code>caption</code></td></tr>
+          <tr><td><code>Button</code>, <code>IconButton</code></td><td>кнопки</td></tr>
+          <tr><td><code>TextField</code></td><td>поле ввода</td></tr>
+          <tr><td><code>Card</code>, <code>Paper</code></td><td>карточки и «листы» с фоном</td></tr>
+          <tr><td><code>Dialog</code></td><td>модальное окно</td></tr>
+          <tr><td><code>Snackbar</code>, <code>Alert</code></td><td>уведомления</td></tr>
+        </tbody>
+      </table></div>
+      <p>Иконки берём из <code>@mui/icons-material</code>, поиск по названию: <a href="https://mui.com/material-ui/material-icons/" target="_blank" rel="noopener">mui.com/material-ui/material-icons</a></p>
+
+      <h3><code>sx</code> или SCSS-модуль?</h3>
+      <div class="compare">
+        <div><b>Проп <code>sx</code></b><p>Подправить один MUI-компонент: отступ, цвет, ширину.</p></div>
+        <div><b><code>*.module.scss</code></b><p>Своя вёрстка и большие блоки стилей, которые не связаны с MUI.</p></div>
+      </div>
+
+      <h3>Как читать документацию</h3>
+      <p>Откройте страницу компонента на mui.com. Сверху живые примеры, у каждого есть кнопка «Show code». Внизу ссылка <b>API</b> со списком всех props.</p>
+    </section>
+
+    <section id="cleanup">
+      <div class="step-head"><span class="step-num">3</span><h2>Чистим шаблон</h2></div>
+      <p>Удалите файлы <code>src/App.css</code> и <code>src/index.css</code> и уберите их импорты из <code>main.tsx</code> и <code>App.tsx</code>.</p>
+      <h3>Итоговая структура</h3>
+      <div class="code"><div class="code-head"><span class="file">Структура папок</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">src/
+├── components/
+│   ├── Header/
+│   │   ├── Header.tsx
+│   │   └── ThemeToggle.tsx
+│   └── Layout/
+│       └── Layout.tsx
+├── styles/
+│   └── _variables.scss
+├── theme/
+│   └── theme.ts
+├── App.tsx
+├── App.module.scss
+└── main.tsx</code></pre></div>
+    </section>
+
+    <section id="theme">
+      <div class="step-head"><span class="step-num">4</span><h2>Создаём тему: светлая и тёмная</h2></div>
+      <div class="code"><div class="code-head"><span class="file">src/theme/theme.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">import { createTheme } from '@mui/material/styles';
+
+export const theme = createTheme({
+  // MUI создаст CSS-переменные (--mui-palette-...), их можно использовать в SCSS
+  cssVariables: { colorSchemeSelector: 'data' },
+  colorSchemes: {
+    light: {
+      palette: {
+        primary: { main: '#1976d2' },
+        background: { default: '#f5f5f5', paper: '#ffffff' },
+      },
+    },
+    dark: {
+      palette: {
+        primary: { main: '#90caf9' },
+        background: { default: '#121212', paper: '#1e1e1e' },
+      },
+    },
+  },
+  // Контрольные точки экрана. Оставляем стандартные значения MUI:
+  // xs: 0, sm: 600, md: 900, lg: 1200, xl: 1536.
+  // Если понадобится другая ширина (например, xl: 1440), задаём её здесь:
+  // breakpoints: {
+  //   values: { xs: 0, sm: 600, md: 900, lg: 1200, xl: 1440 },
+  // },
+  components: {
+    // Любой &lt;Container&gt; по умолчанию будет шириной до xl (1536px)
+    MuiContainer: {
+      defaultProps: { maxWidth: 'xl' },
+    },
+  },
+});</code></pre></div>
+      <ul>
+        <li><code>colorSchemes</code> — цвета для светлой и тёмной темы.</li>
+        <li><code>components.MuiContainer</code> — настройки по умолчанию для компонента <code>Container</code>. Теперь любой <code>&lt;Container&gt;</code> в проекте ограничен шириной <code>xl</code> (1536px) и стоит по центру.</li>
+        <li><code>breakpoints</code> — ширины экрана, на которых меняется раскладка. Мы оставляем стандартные значения MUI.</li>
+      </ul>
+      <div class="note"><span class="note-label">Если нужна другая ширина</span><p>Например, по дизайну контент шириной 1440px: раскомментируйте блок <code>breakpoints</code> в <code>theme.ts</code> и поменяйте <code>xl</code>. Ширина изменится для всего сайта.</p><p>Учтите: <code>xl</code> — это ещё и контрольная точка для адаптивности. Если её поменять, <code>Grid</code> и <code>theme.breakpoints.up('xl')</code> тоже начнут срабатывать на новой ширине.</p></div>
+    </section>
+
+    <section id="provider">
+      <div class="step-head"><span class="step-num">5</span><h2>Подключаем тему</h2></div>
+      <div class="code"><div class="code-head"><span class="file">src/main.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { theme } from './theme/theme';
+import App from './App';
+
+createRoot(document.getElementById('root')!).render(
+  &lt;StrictMode&gt;
+    &lt;ThemeProvider theme={theme} defaultMode="system"&gt;
+      &lt;CssBaseline /&gt;
+      &lt;App /&gt;
+    &lt;/ThemeProvider&gt;
+  &lt;/StrictMode&gt;,
+);</code></pre></div>
+      <ul>
+        <li><code>ThemeProvider</code> раздаёт тему всем компонентам.</li>
+        <li><code>CssBaseline</code> сбрасывает стили браузера и красит фон под текущую тему.</li>
+        <li><code>defaultMode="system"</code> — по умолчанию берётся тема из настроек ОС.</li>
+      </ul>
+      <div class="note"><span class="note-label">Это удобно</span><p>Выбор пользователя MUI сам сохраняет в localStorage. После перезагрузки страницы тема останется.</p></div>
+    </section>
+
+    <section id="toggle">
+      <div class="step-head"><span class="step-num">6</span><h2>Кнопка переключения темы</h2></div>
+      <div class="code"><div class="code-head"><span class="file">src/components/Header/ThemeToggle.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { IconButton, Tooltip } from '@mui/material';
+import { useColorScheme } from '@mui/material/styles';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
+
+export const ThemeToggle = () =&gt; {
+  const { mode, systemMode, setMode } = useColorScheme();
+
+  if (!mode) return null; // тема ещё не определилась
+
+  const current = mode === 'system' ? systemMode : mode;
+  const isDark = current === 'dark';
+
+  return (
+    &lt;Tooltip title={isDark ? 'Светлая тема' : 'Тёмная тема'}&gt;
+      &lt;IconButton color="inherit" onClick={() =&gt; setMode(isDark ? 'light' : 'dark')}&gt;
+        {isDark ? &lt;LightModeIcon /&gt; : &lt;DarkModeIcon /&gt;}
+      &lt;/IconButton&gt;
+    &lt;/Tooltip&gt;
+  );
+};</code></pre></div>
+    </section>
+
+    <section id="layout">
+      <div class="step-head"><span class="step-num">7</span><h2>Шапка и Layout на компонентах MUI</h2></div>
+      <p>Используем готовые компоненты MUI:</p>
+      <ul>
+        <li><code>AppBar</code> — шапка, фон на всю ширину экрана;</li>
+        <li><code>Toolbar</code> — строка внутри шапки;</li>
+        <li><code>Container</code> — ограничивает ширину (у нас до <code>xl</code>, 1536px) и ставит контент по центру;</li>
+        <li><code>Box</code> с <code>component="main"</code> — тег <code>&lt;main&gt;</code> с отступами через <code>sx</code>.</li>
+      </ul>
+      <figure class="scheme" aria-label="Схема: шапка на всю ширину, контент в контейнере по центру">
+        <div class="scheme-screen">
+          <div class="scheme-header"><div class="scheme-box">AppBar на всю ширину → Container → Toolbar</div></div>
+          <div class="scheme-main"><div class="scheme-box tall">Container · до xl (1536px) · по центру</div></div>
+        </div>
+        <figcaption>Экран шире 1536px: по бокам остаётся пустое место, контент по центру</figcaption>
+      </figure>
+      <div class="code"><div class="code-head"><span class="file">src/components/Header/Header.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { AppBar, Container, Toolbar, Typography } from '@mui/material';
+import { ThemeToggle } from './ThemeToggle';
+
+export const Header = () =&gt; {
+  return (
+    // фон шапки — на всю ширину экрана
+    &lt;AppBar
+      position="static"
+      color="inherit"
+      elevation={0}
+      sx={{ borderBottom: 1, borderColor: 'divider' }}
+    &gt;
+      {/* а содержимое — внутри контейнера */}
+      &lt;Container&gt;
+        &lt;Toolbar disableGutters sx={{ justifyContent: 'space-between' }}&gt;
+          &lt;Typography variant="h6" component="h1" color="primary"&gt;
+            Мой первый проект
+          &lt;/Typography&gt;
+          &lt;ThemeToggle /&gt;
+        &lt;/Toolbar&gt;
+      &lt;/Container&gt;
+    &lt;/AppBar&gt;
+  );
+};</code></pre></div>
+      <p><code>disableGutters</code> убирает у <code>Toolbar</code> собственные отступы. Их уже даёт <code>Container</code>, поэтому шапка выровнена по краям с контентом.</p>
+      <p><b>Layout</b> — общий каркас для всех страниц: шапка сверху, под ней контент в контейнере. Новую страницу достаточно обернуть в <code>&lt;Layout&gt;</code>.</p>
+      <div class="code"><div class="code-head"><span class="file">src/components/Layout/Layout.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import type { ReactNode } from 'react';
+import { Box, Container } from '@mui/material';
+import { Header } from '../Header/Header';
+
+type LayoutProps = {
+  children: ReactNode;
+};
+
+export const Layout = ({ children }: LayoutProps) =&gt; {
+  return (
+    &lt;&gt;
+      &lt;Header /&gt;
+      &lt;Box component="main" sx={{ py: 4 }}&gt;
+        &lt;Container&gt;{children}&lt;/Container&gt;
+      &lt;/Box&gt;
+    &lt;/&gt;
+  );
+};</code></pre></div>
+      <p><code>children</code> — это всё, что положили между тегами: <code>&lt;Layout&gt;вот это&lt;/Layout&gt;</code>.</p>
+    </section>
+
+    <section id="scss">
+      <div class="step-head"><span class="step-num">8</span><h2>SCSS Modules</h2></div>
+      <div class="note"><span class="note-label">Правило</span><p>Файл называется <code>Имя.module.scss</code>. Классы из него работают только в том компоненте, куда импортированы, поэтому конфликтов имён не будет.</p></div>
+      <p>MUI отвечает за готовые компоненты, а SCSS-модули — за нашу собственную вёрстку.</p>
+      <h3>Общие переменные для всего проекта</h3>
+      <p>Отступы, скругления и другие общие значения храним в одном файле. Поменяли там — поменялось во всём проекте.</p>
+      <div class="code"><div class="code-head"><span class="file">src/styles/_variables.scss</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-scss">// Общие переменные проекта — меняем здесь, и они меняются везде.
+// Подключаем в нужный файл: @use '&lt;путь до src&gt;/styles/variables' as *;
+
+// Отступы
+$gap-small: 8px;
+$gap: 16px;
+$gap-large: 32px;
+
+// Скругления
+$radius: 8px;</code></pre></div>
+      <p>Подключаем этот файл в начале любого <code>.scss</code>, где нужны переменные, строкой <code>@use</code>. Путь относительный, как у обычного импорта:</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Где лежит ваш .scss</th><th>Что пишем в первой строке</th></tr></thead>
+        <tbody>
+          <tr><td><code>src/App.module.scss</code></td><td><code>@use './styles/variables' as *;</code></td></tr>
+          <tr><td><code>src/components/Header/Header.module.scss</code></td><td><code>@use '../../styles/variables' as *;</code></td></tr>
+        </tbody>
+      </table></div>
+      <p><code>as *</code> значит «использовать переменные напрямую»: пишем <code>$gap</code>, а не <code>variables.$gap</code>. Подчёркивание и <code>.scss</code> в пути не пишем.</p>
+      <h3>Используем в компоненте</h3>
+      <div class="code"><div class="code-head"><span class="file">src/App.module.scss</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-scss">// Подключаем общие переменные проекта
+@use './styles/variables' as *;
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; // кнопка не растягивается на всю ширину
+  gap: $gap;
+}
+
+.hint {
+  margin: 0;
+  padding-left: $gap-small;
+  // цвета берём из темы MUI — они сами меняются при переключении
+  color: var(--mui-palette-text-secondary);
+  border-left: 3px solid var(--mui-palette-primary-main);
+}</code></pre></div>
+    </section>
+
+    <section id="page">
+      <div class="step-head"><span class="step-num">9</span><h2>Собираем страницу</h2></div>
+      <div class="code"><div class="code-head"><span class="file">src/App.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { useState } from 'react';
+import { Button, Card, CardContent, Typography } from '@mui/material';
+import { Layout } from './components/Layout/Layout';
+import styles from './App.module.scss';
+
+function App() {
+  const [count, setCount] = useState(0);
+
+  return (
+    &lt;Layout&gt;
+      &lt;div className={styles.content}&gt;
+        &lt;p className={styles.hint}&gt;
+          Переключите тему в шапке — цвета этого текста тоже поменяются.
+        &lt;/p&gt;
+        &lt;Card&gt;
+          &lt;CardContent&gt;
+            &lt;Typography variant="h5"&gt;Счётчик: {count}&lt;/Typography&gt;
+          &lt;/CardContent&gt;
+        &lt;/Card&gt;
+        &lt;Button variant="contained" onClick={() =&gt; setCount(count + 1)}&gt;
+          Нажми меня
+        &lt;/Button&gt;
+      &lt;/div&gt;
+    &lt;/Layout&gt;
+  );
+}
+
+export default App;</code></pre></div>
+      <p>Запустите <code>npm run dev</code> и нажмите на иконку луны или солнца. Вся страница, и компоненты MUI, и ваши SCSS-стили, переключится на другую тему. Растяните окно шире 1536px: контент останется по центру.</p>
+    </section>
+
+    <section id="commands">
+      <div class="step-head"><span class="step-num">10</span><h2>Полезные команды</h2></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Команда</th><th>Что делает</th></tr></thead>
+        <tbody>
+          <tr><td><code>npm run dev</code></td><td>запуск в режиме разработки</td></tr>
+          <tr><td><code>npm run build</code></td><td>проверка типов и сборка в папку <code>dist</code></td></tr>
+          <tr><td><code>npm run preview</code></td><td>просмотр собранной версии</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="cheatsheet">
+      <div class="step-head"><span class="step-num">→</span><h2>Шпаргалка: где что писать</h2></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Задача</th><th>Инструмент</th></tr></thead>
+        <tbody>
+          <tr><td>Готовые кнопки, карточки, поля, модалки</td><td>компоненты MUI: <code>Button</code>, <code>Card</code>, <code>TextField</code>…</td></tr>
+          <tr><td>Подправить стиль одного MUI-компонента</td><td>проп <code>sx</code></td></tr>
+          <tr><td>Своя вёрстка и раскладка</td><td><code>*.module.scss</code> + <code>className={styles.xxx}</code></td></tr>
+          <tr><td>Общие отступы и переменные SCSS</td><td><code>src/styles/_variables.scss</code> + <code>@use</code></td></tr>
+          <tr><td>Ограничить ширину страницы</td><td><code>&lt;Container&gt;</code> из MUI (ширина <code>xl</code> в <code>theme.ts</code>)</td></tr>
+          <tr><td>Цвета, которые зависят от темы</td><td><code>var(--mui-palette-...)</code> в SCSS</td></tr>
+          <tr><td>Поменять цвета темы</td><td><code>src/theme/theme.ts</code></td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="mistakes">
+      <div class="step-head"><span class="step-num">!</span><h2>Частые ошибки</h2></div>
+      <ul class="mistakes">
+        <li><b>Импортировали <code>App.scss</code> вместо <code>App.module.scss</code></b>Стили станут глобальными, а <code>styles.content</code> будет <code>undefined</code>.</li>
+        <li><b>Написали <code>class</code> вместо <code>className</code></b>В JSX используется только <code>className</code>.</li>
+        <li><b>Захардкодили цвет в SCSS (<code>#fff</code>)</b>В тёмной теме он не поменяется. Используйте переменные <code>--mui-palette-*</code>.</li>
+        <li><b>Назвали компонент с маленькой буквы</b>React-компоненты всегда пишутся с большой: <code>Header</code>, а не <code>header</code>.</li>
+      </ul>
+    </section>
+
+    <header class="chapter" id="ch2">
+      <p class="eyebrow">Глава 2</p>
+      <h2 class="chapter-title">Компоненты и хуки</h2>
+      <p>Какие бывают компоненты, какие хуки есть и зачем они нужны, когда выносить код в отдельный компонент и в какую папку его класть.</p>
+    </header>
+
+    <section id="c-what">
+      <div class="step-head"><span class="step-num">2.1</span><h2>Что такое компонент</h2></div>
+      <p><b>Компонент</b> — это функция, которая возвращает разметку (JSX). Из компонентов, как из кубиков, собирается всё приложение: <code>App</code> → <code>Layout</code> → <code>Header</code> → <code>ThemeToggle</code>.</p>
+      <div class="code"><div class="code-head"><span class="file">Hello.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">export const Hello = () =&gt; {
+  return &lt;h2&gt;Привет!&lt;/h2&gt;;
+};
+
+// используем как тег
+&lt;Hello /&gt;</code></pre></div>
+      <ul>
+        <li>Имя всегда <b>с большой буквы</b>: <code>Hello</code>, а не <code>hello</code>.</li>
+        <li>Возвращает <b>один</b> корневой элемент. Если нужно несколько, оборачиваем в <code>&lt;&gt;...&lt;/&gt;</code> (фрагмент).</li>
+        <li>Один компонент — один файл с тем же именем: <code>Hello.tsx</code>.</li>
+      </ul>
+      <div class="note"><span class="note-label">Классовые компоненты</span><p>Раньше писали <code>class Hello extends React.Component</code>. Сейчас пишем только функциональные компоненты. Классовые встретятся разве что в старых проектах.</p></div>
+    </section>
+
+    <section id="c-props">
+      <div class="step-head"><span class="step-num">2.2</span><h2>Props — входные данные компонента</h2></div>
+      <p>Props — это «атрибуты» компонента. Через них родитель передаёт данные внутрь. Тип props описываем через <code>type</code>:</p>
+      <div class="code"><div class="code-head"><span class="file">ProductCard.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">type ProductCardProps = {
+  title: string;
+  price: number;
+};
+
+export const ProductCard = ({ title, price }: ProductCardProps) =&gt; {
+  return (
+    &lt;div&gt;
+      &lt;h3&gt;{title}&lt;/h3&gt;
+      &lt;p&gt;{price} ₽&lt;/p&gt;
+    &lt;/div&gt;
+  );
+};
+
+// использование
+&lt;ProductCard title="Наушники" price={4990} /&gt;</code></pre></div>
+      <ul>
+        <li><code>step?: number</code> — знак <code>?</code> делает проп <b>необязательным</b>. Значение по умолчанию задаём прямо в параметрах: <code>({ step = 1 })</code>.</li>
+        <li><code>children</code> — особый проп: всё, что положили <b>между тегами</b>. Мы уже использовали его в <code>Layout</code>.</li>
+        <li>Props <b>только для чтения</b>, внутри компонента их не меняем.</li>
+      </ul>
+    </section>
+
+    <section id="c-kinds">
+      <div class="step-head"><span class="step-num">2.3</span><h2>Какие бывают компоненты</h2></div>
+      <ul class="kinds">
+        <li><b>UI-компоненты</b><p>Только показывают то, что пришло в props. Без запросов и сложной логики, поэтому их легко переиспользовать.</p><span class="kind-ex"><code>ProductCard</code> <code>Avatar</code> <code>PriceTag</code></span><span class="kind-dir">src/components/</span></li>
+        <li><b>Блоки (виджеты)</b><p>Крупный кусок экрана со своей логикой и состоянием.</p><span class="kind-ex"><code>Counter</code> <code>LoginForm</code> <code>ProductList</code></span><span class="kind-dir">src/components/</span></li>
+        <li><b>Layout</b><p>Каркас: шапка, подвал, контейнер. Страницу кладём внутрь через <code>children</code>.</p><span class="kind-ex"><code>Layout</code> <code>Header</code></span><span class="kind-dir">src/components/</span></li>
+        <li><b>Страницы</b><p>Целый экран. Собирают блоки вместе и отвечают за конкретный адрес.</p><span class="kind-ex"><code>HomePage</code> <code>ProfilePage</code></span><span class="kind-dir">src/pages/</span></li>
+      </ul>
+      <p>Плюс готовые компоненты библиотек, у нас это MUI (<code>Button</code>, <code>Card</code>, <code>TextField</code>). Свои компоненты часто собираются из них.</p>
+    </section>
+
+    <section id="c-hooks">
+      <div class="step-head"><span class="step-num">2.4</span><h2>Хуки</h2></div>
+      <p><b>Хук</b> — функция, которая начинается с <code>use</code> и даёт компоненту дополнительные возможности: память, реакцию на изменения, доступ к DOM.</p>
+      <h3>Основные хуки</h3>
+      <div class="table-wrap"><table class="hooks">
+        <thead><tr><th>Хук</th><th>Для чего</th><th>Когда нужен</th></tr></thead>
+        <tbody>
+          <tr class="core"><td><code>useState</code></td><td>Хранит данные, при изменении которых компонент <b>перерисовывается</b></td><td>счётчик, открыто/закрыто, текст в поле</td></tr>
+          <tr class="core"><td><code>useEffect</code></td><td>Выполняет код <b>после отрисовки</b>: запросы, таймеры, подписки</td><td>загрузить данные, поменять <code>document.title</code></td></tr>
+          <tr class="core"><td><code>useRef</code></td><td>Ссылка на DOM-элемент или значение, которое <b>не вызывает</b> перерисовку</td><td>поставить фокус в поле, хранить id таймера</td></tr>
+          <tr><td><code>useContext</code></td><td>Достаёт общие данные без передачи props через все уровни</td><td>тема, текущий пользователь, язык</td></tr>
+          <tr><td><code>useMemo</code></td><td>Запоминает <b>результат</b> тяжёлого вычисления</td><td>фильтрация и сортировка большого списка</td></tr>
+          <tr><td><code>useCallback</code></td><td>Запоминает <b>функцию</b> между перерисовками</td><td>передаём функцию в оптимизированный компонент</td></tr>
+          <tr><td><code>useReducer</code></td><td>Как <code>useState</code>, но для сложного состояния с разными действиями</td><td>корзина, многошаговая форма</td></tr>
+          <tr><td><code>useId</code></td><td>Уникальный id</td><td>связать <code>&lt;label&gt;</code> и <code>&lt;input&gt;</code></td></tr>
+        </tbody>
+      </table></div>
+      <div class="note"><span class="note-label">Для начала хватит трёх</span><p><code>useState</code>, <code>useEffect</code>, <code>useRef</code> (выделены в таблице). <code>useMemo</code> и <code>useCallback</code> нужны для оптимизации, без них всё работает.</p></div>
+      <p>Хуки из MUI, которые пригодятся: <code>useColorScheme</code> (тема, уже используем), <code>useTheme</code> (достать значения темы), <code>useMediaQuery</code> (проверить ширину экрана).</p>
+
+      <h3><code>useState</code> — память компонента</h3>
+      <div class="code"><div class="code-head"><span class="file">useState</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">const [isOpen, setIsOpen] = useState(false);
+//     ↑ значение  ↑ функция для изменения   ↑ начальное значение
+
+&lt;button onClick={() =&gt; setIsOpen(!isOpen)}&gt;
+  {isOpen ? 'Скрыть' : 'Показать'}
+&lt;/button&gt;</code></pre></div>
+      <p>Меняем значение <b>только</b> через <code>setIsOpen</code>. Если новое значение зависит от старого, передаём функцию: <code>setCount((prev) =&gt; prev + 1)</code>.</p>
+
+      <h3><code>useEffect</code> — действие после отрисовки</h3>
+      <div class="code"><div class="code-head"><span class="file">useEffect</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">// выполняется после отрисовки и каждый раз, когда меняется count
+useEffect(() =&gt; {
+  document.title = `Счётчик: ${count}`;
+}, [count]);</code></pre></div>
+      <p>Второй аргумент — <b>массив зависимостей</b>:</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Массив</th><th>Когда выполнится</th></tr></thead>
+        <tbody>
+          <tr><td><code>[count]</code></td><td>при появлении компонента и при каждом изменении <code>count</code></td></tr>
+          <tr><td><code>[]</code></td><td>один раз, когда компонент появился</td></tr>
+          <tr><td>не передан</td><td>после <b>каждой</b> отрисовки (обычно это ошибка)</td></tr>
+        </tbody>
+      </table></div>
+      <p>Если запустили таймер или подписку, возвращаем <b>функцию очистки</b>:</p>
+      <div class="code"><div class="code-head"><span class="file">useEffect с очисткой</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">useEffect(() =&gt; {
+  const id = setInterval(() =&gt; setSeconds((s) =&gt; s + 1), 1000);
+
+  // функция очистки — когда компонент исчезает
+  return () =&gt; clearInterval(id);
+}, []);</code></pre></div>
+
+      <h3><code>useRef</code> — доступ к элементу</h3>
+      <div class="code"><div class="code-head"><span class="file">useRef</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">const inputRef = useRef&lt;HTMLInputElement&gt;(null);
+
+&lt;TextField inputRef={inputRef} label="Поиск" /&gt;
+&lt;Button onClick={() =&gt; inputRef.current?.focus()}&gt;Перейти к поиску&lt;/Button&gt;</code></pre></div>
+
+      <h3>Правила хуков</h3>
+      <ol class="rules">
+        <li>Вызываем <b>только внутри компонента</b> или своего хука.</li>
+        <li>Только <b>на верхнем уровне</b>: не внутри <code>if</code>, циклов и обычных функций.</li>
+        <li>Имя своего хука всегда начинается с <code>use</code>.</li>
+      </ol>
+
+      <h3>Свои хуки</h3>
+      <p>Если логика повторяется или мешает читать разметку, выносим её в свой хук в папку <code>src/hooks/</code>:</p>
+      <div class="code"><div class="code-head"><span class="file">src/hooks/useCounter.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">import { useState } from 'react';
+
+// Свой хук: логика счётчика отдельно от разметки
+export const useCounter = (initialValue = 0, step = 1) =&gt; {
+  const [count, setCount] = useState(initialValue);
+
+  const increment = () =&gt; setCount((prev) =&gt; prev + step);
+  const reset = () =&gt; setCount(initialValue);
+
+  return { count, increment, reset };
+};</code></pre></div>
+    </section>
+
+    <section id="c-when">
+      <div class="step-head"><span class="step-num">2.5</span><h2>Как понять, что пора создавать компонент</h2></div>
+      <p>Выносите кусок разметки в отдельный компонент, если ответ «да» хотя бы на один вопрос:</p>
+      <ul class="reasons">
+        <li><b>Повторяется?</b>Один и тот же блок встречается 2 раза и больше: карточки товаров, пункты меню.</li>
+        <li><b>Можно назвать?</b>У куска есть понятное имя: «шапка», «форма входа», «карточка товара».</li>
+        <li><b>Своя логика?</b>У куска есть своё состояние или обработчики: открыть/закрыть, ввод текста.</li>
+        <li><b>Файл разросся?</b>Компонент длиннее 100–150 строк, и в нём трудно ориентироваться.</li>
+      </ul>
+      <div class="note warn"><span class="note-label">Не перестарайтесь</span><p>Не нужно создавать компонент ради одного <code>&lt;div&gt;</code> или одной строки текста. Слишком мелкое дробление тоже мешает читать код.</p></div>
+
+      <h3>Пример: выносим счётчик</h3>
+      <p>Раньше счётчик был прямо в <code>App.tsx</code>. Чтобы сделать два счётчика, пришлось бы копировать код. Выносим его в компонент:</p>
+      <div class="code"><div class="code-head"><span class="file">src/components/Counter/Counter.module.scss</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-scss">@use '../../styles/variables' as *;
+
+.counter {
+  display: flex;
+  align-items: center;
+  gap: $gap;
+}</code></pre></div>
+      <div class="code"><div class="code-head"><span class="file">src/components/Counter/Counter.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { Button, Typography } from '@mui/material';
+import { useCounter } from '../../hooks/useCounter';
+import styles from './Counter.module.scss';
+
+type CounterProps = {
+  title: string;
+  step?: number; // ? — необязательный проп
+};
+
+export const Counter = ({ title, step = 1 }: CounterProps) =&gt; {
+  const { count, increment, reset } = useCounter(0, step);
+
+  return (
+    &lt;div className={styles.counter}&gt;
+      &lt;Typography variant="h6"&gt;
+        {title}: {count}
+      &lt;/Typography&gt;
+      &lt;Button variant="contained" onClick={increment}&gt;
+        +{step}
+      &lt;/Button&gt;
+      &lt;Button onClick={reset}&gt;Сбросить&lt;/Button&gt;
+    &lt;/div&gt;
+  );
+};</code></pre></div>
+      <p>Создаём страницу и используем счётчик дважды с разными props:</p>
+      <div class="code"><div class="code-head"><span class="file">src/pages/HomePage/HomePage.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { Stack, Typography } from '@mui/material';
+import { Counter } from '../../components/Counter/Counter';
+
+export const HomePage = () =&gt; {
+  return (
+    &lt;Stack spacing={3}&gt;
+      &lt;Typography variant="h4"&gt;Главная&lt;/Typography&gt;
+      &lt;Counter title="Яблоки" /&gt;
+      &lt;Counter title="Груши" step={5} /&gt;
+    &lt;/Stack&gt;
+  );
+};</code></pre></div>
+      <p><code>App.tsx</code> становится совсем коротким: только каркас и страница.</p>
+      <div class="code"><div class="code-head"><span class="file">src/App.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { Layout } from './components/Layout/Layout';
+import { HomePage } from './pages/HomePage/HomePage';
+
+function App() {
+  return (
+    &lt;Layout&gt;
+      &lt;HomePage /&gt;
+    &lt;/Layout&gt;
+  );
+}
+
+export default App;</code></pre></div>
+    </section>
+
+    <section id="c-folders">
+      <div class="step-head"><span class="step-num">2.6</span><h2>Где что лежит</h2></div>
+      <div class="code"><div class="code-head"><span class="file">Структура src/</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">src/
+├── api/          # запросы к серверу
+├── assets/       # картинки, иконки, шрифты
+├── components/   # общие компоненты: UI, блоки, Layout
+│   ├── Counter/
+│   │   ├── Counter.tsx
+│   │   └── Counter.module.scss
+│   ├── Header/
+│   └── Layout/
+├── hooks/        # свои хуки: useCounter.ts
+├── pages/        # страницы
+│   └── HomePage/
+│       └── HomePage.tsx
+├── styles/       # общие SCSS-переменные
+├── theme/        # тема MUI
+├── types/        # общие типы TypeScript
+├── utils/        # вспомогательные функции: formatPrice.ts
+├── App.tsx
+└── main.tsx</code></pre></div>
+      <p>Папки создаём <b>по мере надобности</b>. Пустые <code>api/</code> или <code>types/</code> заранее заводить не нужно.</p>
+      <h3>Правила именования</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Что</th><th>Как называем</th><th>Пример</th></tr></thead>
+        <tbody>
+          <tr><td>Компонент</td><td><code>PascalCase</code>, папка = имя файла</td><td><code>ProductCard/ProductCard.tsx</code></td></tr>
+          <tr><td>Стили компонента</td><td>рядом, то же имя + <code>.module.scss</code></td><td><code>ProductCard/ProductCard.module.scss</code></td></tr>
+          <tr><td>Страница</td><td><code>PascalCase</code> + слово <code>Page</code></td><td><code>pages/HomePage/HomePage.tsx</code></td></tr>
+          <tr><td>Хук</td><td><code>camelCase</code>, начинается с <code>use</code></td><td><code>hooks/useCounter.ts</code></td></tr>
+          <tr><td>Утилита</td><td><code>camelCase</code></td><td><code>utils/formatPrice.ts</code></td></tr>
+        </tbody>
+      </table></div>
+      <ul>
+        <li>Одна папка — один компонент. Всё, что к нему относится, лежит рядом.</li>
+        <li>Компонент нужен только на одной странице? Его можно положить в папку этой страницы: <code>pages/HomePage/components/</code>.</li>
+      </ul>
+      <h3>Шаблон нового компонента</h3>
+      <div class="code"><div class="code-head"><span class="file">Папка компонента</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">src/components/ProductCard/
+├── ProductCard.tsx
+└── ProductCard.module.scss</code></pre></div>
+      <div class="code"><div class="code-head"><span class="file">src/components/ProductCard/ProductCard.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import styles from './Template.module.scss';
+
+type ProductCardProps = {
+  title: string;
+  price: number;
+};
+
+export const ProductCard = ({ title, price }: ProductCardProps) =&gt; {
+  return (
+    &lt;div className={styles.card}&gt;
+      &lt;h3&gt;{title}&lt;/h3&gt;
+      &lt;p&gt;{price} ₽&lt;/p&gt;
+    &lt;/div&gt;
+  );
+};</code></pre></div>
+    </section>
+
+    <section id="c-mistakes">
+      <div class="step-head"><span class="step-num">2.7</span><h2>Частые ошибки с компонентами и хуками</h2></div>
+      <ul class="mistakes">
+        <li><b>Меняем состояние напрямую</b><code>count++</code> или <code>items.push(...)</code>: React не узнает об изменении и не перерисует компонент. Всегда через <code>setCount(...)</code>, для массивов — новый массив: <code>setItems([...items, newItem])</code>.</li>
+        <li><b><code>useEffect</code> без массива зависимостей и с <code>setState</code> внутри</b>Получится бесконечная перерисовка.</li>
+        <li><b>Хук внутри <code>if</code></b>React путает хуки между отрисовками. Хуки всегда пишем сверху компонента.</li>
+        <li><b>Читаем состояние сразу после <code>setState</code></b>Новое значение появится только при следующей отрисовке.</li>
+        <li><b>Забыли <code>key</code> в списке</b>При выводе массива через <code>map</code> каждому элементу нужен уникальный <code>key</code>: <code>items.map((item) =&gt; &lt;ProductCard key={item.id} ... /&gt;)</code>.</li>
+        <li><b>Меняем props внутри компонента</b>Props только для чтения. Если значение нужно менять, заводим <code>useState</code> или просим об этом родителя.</li>
+      </ul>
+    </section>
+
+    <header class="chapter" id="ch3">
+      <p class="eyebrow">Глава 3</p>
+      <h2 class="chapter-title">Жизненный цикл компонента</h2>
+      <p>Как компонент появляется, обновляется и исчезает, когда React его перерисовывает и как управлять этими моментами через <code>useEffect</code>.</p>
+    </header>
+
+    <section id="l-phases">
+      <div class="step-head"><span class="step-num">3.1</span><h2>Три этапа жизни</h2></div>
+      <p>У каждого компонента есть «жизнь»: он появляется на странице, обновляется и исчезает.</p>
+      <ol class="cycle" aria-label="Этапы жизненного цикла">
+        <li class="mount"><span class="cycle-tag">1 раз</span><b>Монтирование</b><span class="cycle-en">mount</span><p>Компонент впервые появился на странице: открыли страницу, показали модалку.</p></li>
+        <li class="update"><span class="cycle-tag">сколько угодно раз</span><b>Обновление</b><span class="cycle-en">update</span><p>Компонент перерисовался с новыми данными: нажали «+1», ввели текст в поле.</p></li>
+        <li class="unmount"><span class="cycle-tag">1 раз</span><b>Размонтирование</b><span class="cycle-en">unmount</span><p>Компонент убрали со страницы: закрыли модалку, перешли на другую страницу.</p></li>
+      </ol>
+    </section>
+
+    <section id="l-render">
+      <div class="step-head"><span class="step-num">3.2</span><h2>Когда компонент перерисовывается</h2></div>
+      <p>Компонент обновляется, то есть React заново вызывает функцию компонента, если:</p>
+      <ol class="rules">
+        <li>Изменилось его <b>состояние</b>: вызвали <code>setState</code>.</li>
+        <li>Изменились его <b>props</b>: родитель передал новые данные.</li>
+        <li>Перерисовался <b>родитель</b>: дети перерисовываются вместе с ним.</li>
+        <li>Изменился <b>контекст</b>, который компонент читает через <code>useContext</code>.</li>
+      </ol>
+      <div class="note"><span class="note-label">Перерисовка — не перезагрузка</span><p>React вызывает функцию, сравнивает новый результат со старым и меняет в браузере только то, что изменилось.</p></div>
+      <h3>Что происходит при каждой отрисовке</h3>
+      <ol class="flow" aria-label="Порядок отрисовки">
+        <li><b>Render</b><span>React вызывает функцию компонента и получает JSX</span></li>
+        <li><b>Commit</b><span>React обновляет DOM, то есть то, что видно на странице</span></li>
+        <li><b>Effects</b><span>запускаются <code>useEffect</code>, у которых изменились зависимости</span></li>
+      </ol>
+    </section>
+
+    <section id="l-effect">
+      <div class="step-head"><span class="step-num">3.3</span><h2>Жизненный цикл через <code>useEffect</code></h2></div>
+      <p>В функциональных компонентах всеми этапами управляет <code>useEffect</code>:</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Этап</th><th>Как поймать</th></tr></thead>
+        <tbody>
+          <tr><td>Монтирование</td><td><code>useEffect(() =&gt; { ... }, [])</code></td></tr>
+          <tr><td>Обновление</td><td><code>useEffect(() =&gt; { ... }, [value])</code></td></tr>
+          <tr><td>Размонтирование</td><td><code>return () =&gt; { ... }</code> внутри <code>useEffect</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>Посмотрите, в каком порядке появляются сообщения в консоли браузера (F12 → Console):</p>
+      <div class="code"><div class="code-head"><span class="file">LifecycleDemo.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { useEffect, useState } from 'react';
+
+export const LifecycleDemo = ({ name }: { name: string }) =&gt; {
+  const [count, setCount] = useState(0);
+
+  // 1. Рендер: тело функции выполняется при КАЖДОЙ отрисовке
+  console.log('render', { name, count });
+
+  // 2. Монтирование и размонтирование
+  useEffect(() =&gt; {
+    console.log('mount: компонент появился на странице');
+
+    return () =&gt; {
+      console.log('unmount: компонент убрали со страницы');
+    };
+  }, []);
+
+  // 3. Обновление: срабатывает, когда изменился count
+  useEffect(() =&gt; {
+    console.log('update: count стал', count);
+  }, [count]);
+
+  return &lt;button onClick={() =&gt; setCount(count + 1)}&gt;{name}: {count}&lt;/button&gt;;
+};</code></pre></div>
+      <p>Чтобы увидеть размонтирование, компонент нужно убрать со страницы:</p>
+      <div class="code"><div class="code-head"><span class="file">ShowHide.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { useState } from 'react';
+import { LifecycleDemo } from './LifecycleDemo';
+
+export const ShowHide = () =&gt; {
+  const [visible, setVisible] = useState(true);
+
+  return (
+    &lt;&gt;
+      &lt;button onClick={() =&gt; setVisible(!visible)}&gt;
+        {visible ? 'Убрать' : 'Показать'}
+      &lt;/button&gt;
+
+      {/* visible = false → LifecycleDemo размонтируется */}
+      {visible &amp;&amp; &lt;LifecycleDemo name="Счётчик" /&gt;}
+    &lt;/&gt;
+  );
+};
+
+type User = {
+  id: number;
+  name: string;
+};</code></pre></div>
+      <div class="note warn"><span class="note-label">Почему в консоли всё по два раза?</span><p>В режиме разработки <code>&lt;StrictMode&gt;</code> специально монтирует компонент, сразу размонтирует и монтирует снова. Так он находит эффекты без функции очистки. В собранном проекте (<code>npm run build</code>) такого нет. Это нормально, ничего не сломалось.</p></div>
+    </section>
+
+    <section id="l-fetch">
+      <div class="step-head"><span class="step-num">3.4</span><h2>Практика: загрузка данных</h2></div>
+      <p>Самая частая задача для <code>useEffect</code> — загрузить данные с сервера, когда компонент появился, и перезагрузить, когда изменился параметр:</p>
+      <div class="code"><div class="code-head"><span class="file">UserCard.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { useEffect, useState } from 'react';
+
+type User = {
+  id: number;
+  name: string;
+};
+
+export const UserCard = ({ userId }: { userId: number }) =&gt; {
+  const [user, setUser] = useState&lt;User | null&gt;(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() =&gt; {
+    const controller = new AbortController();
+    setIsLoading(true);
+
+    fetch(`https://jsonplaceholder.typicode.com/users/${userId}`, {
+      signal: controller.signal,
+    })
+      .then((res) =&gt; res.json())
+      .then((data: User) =&gt; setUser(data))
+      .catch(() =&gt; {}) // запрос отменён или ошибка сети
+      .finally(() =&gt; setIsLoading(false));
+
+    // userId поменялся или компонент исчез → отменяем старый запрос
+    return () =&gt; controller.abort();
+  }, [userId]);
+
+  if (isLoading) return &lt;p&gt;Загрузка...&lt;/p&gt;;
+  if (!user) return &lt;p&gt;Пользователь не найден&lt;/p&gt;;
+
+  return &lt;h3&gt;{user.name}&lt;/h3&gt;;
+};</code></pre></div>
+      <ul class="phase-list">
+        <li><b class="ph mount">Монтирование</b> запрос уходит первый раз.</li>
+        <li><b class="ph update">Обновление</b> поменялся <code>userId</code>: старый запрос отменяется, уходит новый.</li>
+        <li><b class="ph unmount">Размонтирование</b> ушли со страницы: запрос отменяется, <code>setUser</code> не вызовется у исчезнувшего компонента.</li>
+      </ul>
+
+      <h3>Почему <code>useEffect(..., [])</code> срабатывает 2 раза при разработке</h3>
+      <p>Откройте вкладку <b>Network</b> (F12). При запуске через <code>npm run dev</code> там будет <b>два</b> запроса к <code>/users/1</code>, и первый помечен как <b>canceled</b>. Это не ошибка.</p>
+      <p><b>Кто это делает.</b> <code>&lt;StrictMode&gt;</code> в <code>main.tsx</code>. Только в режиме разработки он для каждого компонента делает так:</p>
+      <ol class="flow strict" aria-label="Двойной запуск эффекта в StrictMode">
+        <li class="s-mount"><b>mount</b><span>эффект запустился, уходит запрос №1</span></li>
+        <li class="s-unmount"><b>unmount</b><span>функция очистки: запрос №1 отменён</span></li>
+        <li class="s-mount"><b>mount</b><span>эффект запустился снова, запрос №2 — его данные и попадут на экран</span></li>
+      </ol>
+      <p><b>Зачем.</b> React проверяет, что у эффекта правильная функция очистки. Если очистки нет, ошибка проявится сразу при разработке, а не у пользователей:</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Эффект</th><th>Без очистки при двойном запуске</th><th>С очисткой</th></tr></thead>
+        <tbody>
+          <tr><td><code>setInterval</code></td><td>два таймера, счётчик идёт в 2 раза быстрее</td><td>работает один таймер</td></tr>
+          <tr><td><code>addEventListener</code></td><td>обработчик срабатывает два раза</td><td>один обработчик</td></tr>
+          <tr><td><code>fetch</code></td><td>два запроса, ответы могут прийти не по порядку</td><td>первый отменён, данные от второго</td></tr>
+        </tbody>
+      </table></div>
+      <p><b>Когда так не будет.</b> В собранном проекте (<code>npm run build</code> и <code>npm run preview</code>) эффект срабатывает <b>один раз</b>.</p>
+      <p><b>Что делать.</b> Ничего не отключать, просто всегда писать функцию очистки. Если при двойном запуске всё работает правильно, эффект написан верно.</p>
+      <div class="note warn"><span class="note-label">Не прячьте проблему</span><p>Не убирайте <code>&lt;StrictMode&gt;</code> и не ставьте «защиту» через <code>useRef</code>, чтобы эффект срабатывал один раз. Так проблема не решается, а только скрывается.</p></div>
+    </section>
+
+    <section id="l-class">
+      <div class="step-head"><span class="step-num">3.5</span><h2>Для справки: классовые компоненты</h2></div>
+      <p>В старом коде встретятся методы жизненного цикла. Вот чему они соответствуют:</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Классовый компонент</th><th>Функциональный компонент</th></tr></thead>
+        <tbody>
+          <tr><td><code>componentDidMount</code></td><td><code>useEffect(() =&gt; {...}, [])</code></td></tr>
+          <tr><td><code>componentDidUpdate</code></td><td><code>useEffect(() =&gt; {...}, [value])</code></td></tr>
+          <tr><td><code>componentWillUnmount</code></td><td><code>return () =&gt; {...}</code> внутри <code>useEffect</code></td></tr>
+          <tr><td><code>render()</code></td><td>тело функции компонента</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="l-mistakes">
+      <div class="step-head"><span class="step-num">3.6</span><h2>Частые ошибки</h2></div>
+      <ul class="mistakes">
+        <li><b>Нет функции очистки у таймера или подписки</b>После ухода со страницы они продолжают работать и тратят память.</li>
+        <li><b>Забыли зависимость</b>Эффект использует <code>userId</code>, но в массиве его нет. При смене <code>userId</code> данные не перезагрузятся.</li>
+        <li><b>Объект или массив в зависимостях</b>Если он создаётся заново при каждой отрисовке, эффект будет срабатывать каждый раз.</li>
+        <li><b>Считаем данные в <code>useEffect</code></b>Если значение вычисляется из props или state, <code>useEffect</code> не нужен. Считаем прямо при отрисовке: <code>const fullName = firstName + ' ' + lastName;</code></li>
+      </ul>
+    </section>
+
+    <header class="chapter" id="ch4">
+      <p class="eyebrow">Глава 4</p>
+      <h2 class="chapter-title">Навигация по сайту</h2>
+      <p>Подключаем React Router: страницы со своими адресами, меню, ссылки, параметры в адресе и страница 404.</p>
+    </header>
+
+    <section id="r-why">
+      <div class="step-head"><span class="step-num">4.1</span><h2>Зачем нужен роутер</h2></div>
+      <p>Наше приложение — <b>SPA</b> (Single Page Application): в браузер загружается одна HTML-страница, а всё остальное рисует React. Чтобы у сайта были разные страницы со своими адресами (<code>/</code>, <code>/posts</code>, <code>/about</code>), нужен <b>роутер</b>. Он:</p>
+      <ul>
+        <li>смотрит на адрес в браузере и показывает нужную страницу;</li>
+        <li>переключает страницы <b>без перезагрузки</b>: быстро, состояние не теряется;</li>
+        <li>поддерживает кнопки «Назад» и «Вперёд» браузера.</li>
+      </ul>
+      <p>Используем самую популярную библиотеку — <b>React Router</b>.</p>
+      <div class="code"><div class="code-head"><span class="file">Терминал</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-bash">npm install react-router</code></pre></div>
+    </section>
+
+    <section id="r-setup">
+      <div class="step-head"><span class="step-num">4.2</span><h2>Подключаем роутер</h2></div>
+      <p>Оборачиваем приложение в <code>BrowserRouter</code>:</p>
+      <div class="code"><div class="code-head"><span class="file">src/main.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { theme } from './theme/theme';
+import App from './App';
+
+createRoot(document.getElementById('root')!).render(
+  &lt;StrictMode&gt;
+    &lt;BrowserRouter&gt;
+      &lt;ThemeProvider theme={theme} defaultMode="system"&gt;
+        &lt;CssBaseline /&gt;
+        &lt;App /&gt;
+      &lt;/ThemeProvider&gt;
+    &lt;/BrowserRouter&gt;
+  &lt;/StrictMode&gt;,
+);</code></pre></div>
+    </section>
+
+    <section id="r-routes">
+      <div class="step-head"><span class="step-num">4.3</span><h2>Описываем страницы</h2></div>
+      <p>Каждая страница — компонент в папке <code>src/pages/</code>. Маршруты описываем в <code>App.tsx</code>:</p>
+      <div class="code"><div class="code-head"><span class="file">src/App.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { Route, Routes } from 'react-router';
+import { Layout } from './components/Layout/Layout';
+import { HomePage } from './pages/HomePage/HomePage';
+import { AboutPage } from './pages/AboutPage/AboutPage';
+import { PostsPage } from './pages/PostsPage/PostsPage';
+import { PostPage } from './pages/PostPage/PostPage';
+import { NotFoundPage } from './pages/NotFoundPage/NotFoundPage';
+
+function App() {
+  return (
+    &lt;Routes&gt;
+      {/* Layout — общий каркас, страницы появляются на месте &lt;Outlet /&gt; */}
+      &lt;Route element={&lt;Layout /&gt;}&gt;
+        &lt;Route index element={&lt;HomePage /&gt;} /&gt;
+        &lt;Route path="about" element={&lt;AboutPage /&gt;} /&gt;
+        &lt;Route path="posts" element={&lt;PostsPage /&gt;} /&gt;
+        &lt;Route path="posts/:id" element={&lt;PostPage /&gt;} /&gt;
+        &lt;Route path="*" element={&lt;NotFoundPage /&gt;} /&gt;
+      &lt;/Route&gt;
+    &lt;/Routes&gt;
+  );
+}
+
+export default App;</code></pre></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Маршрут</th><th>Адрес</th><th>Что покажет</th></tr></thead>
+        <tbody>
+          <tr><td><code>index</code></td><td><code>/</code></td><td>главная страница</td></tr>
+          <tr><td><code>path="about"</code></td><td><code>/about</code></td><td>страница «О проекте»</td></tr>
+          <tr><td><code>path="posts"</code></td><td><code>/posts</code></td><td>список постов</td></tr>
+          <tr><td><code>path="posts/:id"</code></td><td><code>/posts/1</code>, <code>/posts/2</code></td><td>один пост, <code>:id</code> — параметр</td></tr>
+          <tr><td><code>path="*"</code></td><td>любой другой адрес</td><td>страница 404</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="r-outlet">
+      <div class="step-head"><span class="step-num">4.4</span><h2>Общий каркас: <code>Outlet</code></h2></div>
+      <p><code>Layout</code> теперь получает страницу не через <code>children</code>, а через <b><code>&lt;Outlet /&gt;</code></b>: это место, куда роутер подставит текущую страницу. Шапка остаётся на месте, меняется только контент.</p>
+      <figure class="scheme" aria-label="Схема: Layout с шапкой и Outlet, куда подставляется страница">
+        <div class="scheme-screen">
+          <div class="scheme-header"><div class="scheme-box">Header · не меняется</div></div>
+          <div class="scheme-main"><div class="scheme-box tall">&lt;Outlet /&gt; → HomePage / PostsPage / AboutPage…</div></div>
+        </div>
+        <figcaption>При переходе по ссылке меняется только содержимое Outlet</figcaption>
+      </figure>
+      <div class="code"><div class="code-head"><span class="file">src/components/Layout/Layout.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { Outlet } from 'react-router';
+import { Box, Container } from '@mui/material';
+import { Header } from '../Header/Header';
+
+export const Layout = () =&gt; {
+  return (
+    &lt;&gt;
+      &lt;Header /&gt;
+      &lt;Box component="main" sx={{ py: 4 }}&gt;
+        &lt;Container&gt;
+          {/* сюда подставляется текущая страница */}
+          &lt;Outlet /&gt;
+        &lt;/Container&gt;
+      &lt;/Box&gt;
+    &lt;/&gt;
+  );
+};</code></pre></div>
+    </section>
+
+    <section id="r-links">
+      <div class="step-head"><span class="step-num">4.5</span><h2>Ссылки и меню</h2></div>
+      <p>Для переходов <b>не используем</b> <code>&lt;a href&gt;</code>: он перезагружает всю страницу. Вместо него:</p>
+      <div class="compare">
+        <div><b><code>Link</code></b><p>Обычная ссылка: <code>&lt;Link to="/about"&gt;О проекте&lt;/Link&gt;</code></p></div>
+        <div><b><code>NavLink</code></b><p>Ссылка для меню. Сама добавляет класс <code>active</code>, когда мы на этой странице.</p></div>
+      </div>
+      <p>С MUI удобно передать ссылку в проп <code>component</code>. Получится кнопка MUI, которая работает как ссылка:</p>
+      <div class="code"><div class="code-head"><span class="file">src/components/Header/Header.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { NavLink } from 'react-router';
+import { AppBar, Box, Button, Container, Toolbar, Typography } from '@mui/material';
+import { ThemeToggle } from './ThemeToggle';
+
+const links = [
+  { to: '/', label: 'Главная' },
+  { to: '/posts', label: 'Посты' },
+  { to: '/about', label: 'О проекте' },
+];
+
+export const Header = () =&gt; {
+  return (
+    &lt;AppBar
+      position="static"
+      color="inherit"
+      elevation={0}
+      sx={{ borderBottom: 1, borderColor: 'divider' }}
+    &gt;
+      &lt;Container&gt;
+        &lt;Toolbar disableGutters sx={{ gap: 2 }}&gt;
+          &lt;Typography variant="h6" component="h1" color="primary"&gt;
+            Мой первый проект
+          &lt;/Typography&gt;
+
+          &lt;Box component="nav" sx={{ display: 'flex', gap: 1, flexGrow: 1 }}&gt;
+            {links.map((link) =&gt; (
+              &lt;Button
+                key={link.to}
+                component={NavLink}
+                to={link.to}
+                color="inherit"
+                // NavLink сам добавляет класс .active текущей ссылке
+                sx={{ '&amp;.active': { color: 'primary.main' } }}
+              &gt;
+                {link.label}
+              &lt;/Button&gt;
+            ))}
+          &lt;/Box&gt;
+
+          &lt;ThemeToggle /&gt;
+        &lt;/Toolbar&gt;
+      &lt;/Container&gt;
+    &lt;/AppBar&gt;
+  );
+};</code></pre></div>
+      <p>Список, где каждый пункт ведёт на свою страницу:</p>
+      <div class="code"><div class="code-head"><span class="file">src/data/posts.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">export type Post = {
+  id: number;
+  title: string;
+  text: string;
+};
+
+export const posts: Post[] = [
+  { id: 1, title: 'Первый пост', text: 'Учим React и TypeScript.' },
+  { id: 2, title: 'Второй пост', text: 'Подключили Material UI и тёмную тему.' },
+  { id: 3, title: 'Третий пост', text: 'Разобрались с навигацией.' },
+];</code></pre></div>
+      <div class="code"><div class="code-head"><span class="file">src/pages/PostsPage/PostsPage.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { Link } from 'react-router';
+import { List, ListItemButton, ListItemText, Typography } from '@mui/material';
+import { posts } from '../../data/posts';
+
+export const PostsPage = () =&gt; {
+  return (
+    &lt;&gt;
+      &lt;Typography variant="h4" gutterBottom&gt;
+        Посты
+      &lt;/Typography&gt;
+      &lt;List&gt;
+        {posts.map((post) =&gt; (
+          &lt;ListItemButton key={post.id} component={Link} to={`/posts/${post.id}`}&gt;
+            &lt;ListItemText primary={post.title} /&gt;
+          &lt;/ListItemButton&gt;
+        ))}
+      &lt;/List&gt;
+    &lt;/&gt;
+  );
+};</code></pre></div>
+    </section>
+
+    <section id="r-params">
+      <div class="step-head"><span class="step-num">4.6</span><h2>Параметры адреса и переход из кода</h2></div>
+      <ul>
+        <li><b><code>useParams</code></b> достаёт параметры из адреса: для <code>/posts/2</code> получим <code>{ id: '2' }</code>.</li>
+        <li><b><code>useNavigate</code></b> делает переход из кода: после отправки формы, по кнопке «Назад».</li>
+      </ul>
+      <div class="code"><div class="code-head"><span class="file">src/pages/PostPage/PostPage.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { useNavigate, useParams } from 'react-router';
+import { Button, Typography } from '@mui/material';
+import { posts } from '../../data/posts';
+
+export const PostPage = () =&gt; {
+  const { id } = useParams(); // id из адреса /posts/:id — всегда строка
+  const navigate = useNavigate();
+
+  const post = posts.find((p) =&gt; p.id === Number(id));
+
+  if (!post) {
+    return &lt;Typography&gt;Пост не найден&lt;/Typography&gt;;
+  }
+
+  return (
+    &lt;&gt;
+      &lt;Button onClick={() =&gt; navigate(-1)}&gt;← Назад&lt;/Button&gt;
+      &lt;Typography variant="h4" gutterBottom&gt;
+        {post.title}
+      &lt;/Typography&gt;
+      &lt;Typography&gt;{post.text}&lt;/Typography&gt;
+    &lt;/&gt;
+  );
+};</code></pre></div>
+      <p>Переход после действия пользователя:</p>
+      <div class="code"><div class="code-head"><span class="file">LoginForm.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { useNavigate } from 'react-router';
+import { Button } from '@mui/material';
+
+export const LoginForm = () =&gt; {
+  const navigate = useNavigate();
+
+  const handleSubmit = () =&gt; {
+    // ...проверили логин и пароль
+    navigate('/profile'); // переходим на другую страницу из кода
+  };
+
+  return &lt;Button onClick={handleSubmit}&gt;Войти&lt;/Button&gt;;
+};</code></pre></div>
+      <p><code>navigate(-1)</code> — назад, как кнопка браузера. <code>navigate('/path')</code> — на указанную страницу.</p>
+    </section>
+
+    <section id="r-404">
+      <div class="step-head"><span class="step-num">4.7</span><h2>Страница 404</h2></div>
+      <p>Маршрут <code>path="*"</code> срабатывает, если ни один другой не подошёл:</p>
+      <div class="code"><div class="code-head"><span class="file">src/pages/NotFoundPage/NotFoundPage.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { Link } from 'react-router';
+import { Button, Typography } from '@mui/material';
+
+export const NotFoundPage = () =&gt; {
+  return (
+    &lt;&gt;
+      &lt;Typography variant="h4" gutterBottom&gt;
+        404 — страница не найдена
+      &lt;/Typography&gt;
+      &lt;Button component={Link} to="/" variant="contained"&gt;
+        На главную
+      &lt;/Button&gt;
+    &lt;/&gt;
+  );
+};</code></pre></div>
+    </section>
+
+    <section id="r-structure">
+      <div class="step-head"><span class="step-num">4.8</span><h2>Итоговая структура</h2></div>
+      <div class="code"><div class="code-head"><span class="file">Структура src/</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">src/
+├── components/
+│   ├── Header/
+│   └── Layout/
+├── data/
+│   └── posts.ts
+├── pages/
+│   ├── HomePage/
+│   ├── AboutPage/
+│   ├── PostsPage/
+│   ├── PostPage/
+│   └── NotFoundPage/
+├── App.tsx        # маршруты
+└── main.tsx       # BrowserRouter</code></pre></div>
+      <h3>Новая страница за 3 шага</h3>
+      <ol class="rules">
+        <li>Создать компонент в <code>src/pages/НазваниеPage/НазваниеPage.tsx</code>.</li>
+        <li>Добавить <code>&lt;Route path="..." element={&lt;НазваниеPage /&gt;} /&gt;</code> в <code>App.tsx</code>.</li>
+        <li>Добавить ссылку в меню: массив <code>links</code> в <code>Header.tsx</code>.</li>
+      </ol>
+    </section>
+
+    <section id="r-mistakes">
+      <div class="step-head"><span class="step-num">4.9</span><h2>Частые ошибки</h2></div>
+      <ul class="mistakes">
+        <li><b><code>&lt;a href="/about"&gt;</code> вместо <code>&lt;Link to="/about"&gt;</code></b>Страница полностью перезагружается, состояние теряется.</li>
+        <li><b>Забыли <code>&lt;Outlet /&gt;</code> в <code>Layout</code></b>Шапка есть, а страницы не появляются.</li>
+        <li><b><code>useNavigate</code> или <code>Link</code> вне <code>BrowserRouter</code></b>В консоли будет ошибка. <code>BrowserRouter</code> должен оборачивать всё приложение.</li>
+        <li><b>Сравниваем <code>id</code> из <code>useParams</code> с числом</b>Параметр всегда строка, переводим так: <code>Number(id)</code>.</li>
+        <li><b>На хостинге 404 при обновлении <code>/posts</code></b>Сервер не знает про маршруты React. На хостинге нужно настроить, чтобы все адреса отдавали <code>index.html</code>. В <code>npm run dev</code> всё работает само.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>Проверено на сборке: Vite 8, React 19, TypeScript, MUI 9, sass-embedded. Ноябрь 2026.</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-jsx.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-tsx.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-scss.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+<script>
+(function () {
+  // Копирование кода
+  document.querySelectorAll('.copy').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var code = btn.closest('.code').querySelector('code');
+      var text = code.textContent;
+      var done = function () {
+        btn.textContent = 'Скопировано';
+        btn.classList.add('done');
+        setTimeout(function () { btn.textContent = 'Копировать'; btn.classList.remove('done'); }, 1600);
+      };
+      var fallback = function () {
+        var r = document.createRange();
+        r.selectNodeContents(code);
+        var s = window.getSelection();
+        s.removeAllRanges();
+        s.addRange(r);
+        btn.textContent = 'Выделено — нажмите Ctrl+C';
+      };
+      try {
+        navigator.clipboard.writeText(text).then(done, fallback);
+      } catch (e) { fallback(); }
+    });
+  });
+
+  // Счётчик в макете
+  var count = 0;
+  document.querySelectorAll('[data-inc]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      count++;
+      document.querySelectorAll('[data-count]').forEach(function (el) { el.textContent = count; });
+    });
+  });
+
+  // Подсветка текущего шага в оглавлении
+  var links = {};
+  document.querySelectorAll('.toc a').forEach(function (a) { links[a.getAttribute('href').slice(1)] = a; });
+  if ('IntersectionObserver' in window) {
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          Object.keys(links).forEach(function (k) { links[k].classList.toggle('active', k === e.target.id); });
+        }
+      });
+    }, { rootMargin: '-15% 0px -70% 0px' });
+    document.querySelectorAll('main section').forEach(function (s) { obs.observe(s); });
+  }
+})();
+</script>
