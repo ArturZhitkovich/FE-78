@@ -1,0 +1,93 @@
+@charset "UTF-8";
+.card {
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  padding: 16px;
+  max-width: 360px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  justify-self: center;
+  display: flex;
+  flex-direction: column;
+}
+
+.mainContent {
+  display: flex;
+  /* Возвращаем в row (по умолчанию), чтобы текст и картинка были в одну строку */
+  flex-direction: row;
+  justify-content: space-between; /* Разносит текст влево, а картинку вправо */
+  gap: 16px; /* Отступ между текстовым блоком и картинкой */
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.textContent {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1; /* Текст занимает всё свободное пространство слева */
+}
+
+.date {
+  text-align: left;
+  color: #8a8a8a;
+  font-size: 12px;
+  margin: 0;
+}
+
+.title {
+  text-align: justify;
+  color: #212529;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Изменено: Картинка стала маленькой, квадратной и зафиксированной справа */
+.imageContainer {
+  width: 56px; /* Точные размеры маленького превью со скриншота */
+  height: 56px;
+  flex-shrink: 0; /* Запрещаем картинке сжиматься */
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  -o-object-fit: cover;
+  object-fit: cover; /* Квадратное кадрирование изображения без искажений */
+  display: block;
+}
+
+/* Панель взаимодействия снизу */
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #6c757d;
+}
+
+.actionsLeft,
+.actionsRight {
+  display: flex;
+  gap: 16px;
+}
+
+.iconButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6c757d;
+  font-size: 16px;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.iconButton:hover {
+  color: #212529;
+}/*# sourceMappingURL=PostCardSmall.module.css.map */

@@ -1,80 +1,107 @@
+import { useState } from "react";
+// import heroImg from "./assets/hero.png";
+// import reactLogo from "./assets/react.svg";
+// import viteLogo from "./assets/vite.svg";
+// import "./App.css";
 import { Box, Button, Typography } from "@mui/material";
-import { Layout } from "./components/Layout/Layout";
-import { Card } from "./components/Layout/Layout";
+import "./App.module.css";
+import { Layout } from "components/Layout/Layout";
+import { SignIn } from "./components/SignIn/SignIn";
+import { Success } from "./components/Success/Success";
+import { PostCardFull } from "./components/PostCard/Full/PostCardFull";
+import { PostCardLarge } from "./components/PostCard//Large/PostCardLarge";
+import { PostCardMedium } from "./components/PostCard/Medium/PostCardMedium";
+import { PostCardSmall } from "./components/PostCard/Small/PostCardSmall";
+import {
+  postFullMock,
+  postLargeMock,
+  postMediumMock,
+  postSmallMock,
+} from "./components/PostCard/mockData";
+import { PostsPage } from "./components/PostsBlog/PostsBlog";
 
-const label = { slotProps: { input: { "aria-label": "Checkbox demo" } } };
+// import { ButtonSignIn, ButtonMenu } from "./components/Button/ButtonTitle";
 
-function App() {
+// function App() {
+//   // 2. Создаем состояние для текста кнопки меню.
+//   // По умолчанию значение равно "="
+//   const [menuText, setMenuText] = useState("=");
+
+//   // Функция, которая сработает при клике
+//   const handleClick = () => {
+//     // Переключаем текст: если сейчас "=", ставим "+", иначе возвращаем "="
+//     setMenuText((prevText) => (prevText === "=" ? "x" : "="));
+//     // alert("Кнопка нажата!");
+//   };
+
+//   return (
+//     <div>
+//       <div className="divTitle">
+//         <ButtonSignIn text="Sign In" title="Авторизация"></ButtonSignIn>
+//       </div>
+//       <div className="divMenu">
+//         <ButtonMenu
+//           text={menuText}
+//           title="Меню"
+//           onClick={handleClick}
+//         ></ButtonMenu>
+//       </div>
+//     </div>
+//   );
+// }
+
+//HW_40
+export function App() {
+  //HW_40_1
+  // const [currentScreen, setCurrentScreen] = useState<"signin" | "success">(
+  //   "signin",
+  // );
+  // return (
+  //   <>
+  //     {currentScreen === "signin" ? <SignIn /> : <Success />}
+  //     {/* Кнопка переключения экранов для теста */}
+  //     <button
+  //       style={{
+  //         position: "fixed",
+  //         bottom: "20px",
+  //         right: "20px",
+  //         padding: "10px 16px",
+  //         backgroundColor: "#333",
+  //         color: "#fff",
+  //         border: "none",
+  //         borderRadius: "4px",
+  //         cursor: "pointer",
+  //         zIndex: 9999,
+  //       }}
+  //       onClick={() =>
+  //         setCurrentScreen(currentScreen === "signin" ? "success" : "signin")
+  //       }
+  //     >
+  //       Показать страницу: {currentScreen === "signin" ? "Success" : "Sign In"}
+  //     </button>
+  //   </>
+  // );
+  //HW_40_2
+  // Фейковые данные для навигации согласно интерфейсу prevPost и nextPost
+  const prevPost = {
+    title: "10 Things to Know...",
+    link: "/posts/1",
+  };
+
+  const nextPost = {
+    title: "A Beautiful Video...",
+    link: "/posts/3",
+  };
   return (
     <Layout>
-      <Box>
-        <Card />
-        <Card size="small" />
-        <Card size="large" />
-
-        <Box>
-          <Typography variant="h1">h1. Heading</Typography>
-
-          <Typography variant="h2" gutterBottom>
-            h2. Heading
-          </Typography>
-
-          <Typography variant="h3" gutterBottom>
-            h3. Heading
-          </Typography>
-        </Box>
-
-        <Typography>Text</Typography>
-
-        <Button variant="contained"> Red</Button>
-
-        <Typography variant="h4" gutterBottom>
-          h4. Heading
-        </Typography>
-        <Typography variant="h5" gutterBottom>
-          h5. Heading
-        </Typography>
-        <Typography variant="h6" gutterBottom>
-          h6. Heading
-        </Typography>
-        <Typography variant="subtitle1" gutterBottom>
-          subtitle1. Lorem ipsum dolor sit amet, consectetur adipisicing elit.
-          Quos blanditiis tenetur
-        </Typography>
-        <Typography variant="subtitle2" gutterBottom>
-          subtitle2. Lorem ipsum dolor sit amet, consectetur adipisicing elit.
-          Quos blanditiis tenetur
-        </Typography>
-        <Typography variant="body1" gutterBottom>
-          body1. Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quos
-          blanditiis tenetur unde suscipit, quam beatae rerum inventore
-          consectetur, neque doloribus, cupiditate numquam dignissimos laborum
-          fugiat deleniti? Eum quasi quidem quibusdam.
-        </Typography>
-        <Typography variant="body2" gutterBottom>
-          body2. Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quos
-          blanditiis tenetur unde suscipit, quam beatae rerum inventore
-          consectetur, neque doloribus, cupiditate numquam dignissimos laborum
-          fugiat deleniti? Eum quasi quidem quibusdam.
-        </Typography>
-        <Typography variant="button" gutterBottom sx={{ display: "block" }}>
-          button text
-        </Typography>
-        <Typography variant="caption" gutterBottom sx={{ display: "block" }}>
-          caption text
-        </Typography>
-        <Typography variant="overline" gutterBottom sx={{ display: "block" }}>
-          overline text
-        </Typography>
-
-        <Typography>Title</Typography>
-
-        {/* <Button>Click me</Button>
-
-      <TextField />
-
-      <Checkbox {...label} defaultChecked /> */}
-      </Box>
+      {/* <Box> */}
+      {/* <PostsPage /> */}
+      <PostCardFull
+        post={postFullMock}
+        prevPost={prevPost}
+        nextPost={nextPost}
+      />
+      {/* </Box> */}
     </Layout>
   );
 }

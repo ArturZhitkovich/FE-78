@@ -1,0 +1,83 @@
+.customHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #1e3a8a;
+  color: white;
+  padding: 0 24px;
+  height: 56px;
+  box-sizing: border-box;
+}
+
+.headerLeft,
+.headerRight {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  font-size: 18px;
+}
+
+.iconSearch,
+.iconProfile {
+  cursor: pointer;
+}
+
+/* Контейнер кнопки (создаем квадратную область для точной геометрии) */
+.burgerButton {
+  width: 24px;
+  height: 24px;
+  position: relative;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* Общие стили для всех трех линий */
+.burgerButton span {
+  display: block;
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background-color: white;
+  border-radius: 2px;
+  transition:
+    transform 0.25s ease,
+    top 0.25s ease,
+    opacity 0.25s ease;
+  transform-origin: center; /* Центрируем точку вращения для идеального крестика */
+  left: 0;
+}
+
+/* Исходное положение линий в состоянии бургера */
+.burgerButton span:nth-child(1) {
+  top: 4px;
+}
+
+.burgerButton span:nth-child(2) {
+  top: 11px;
+}
+
+.burgerButton span:nth-child(3) {
+  top: 18px;
+}
+
+/* Стили для состояния Крестика (.open) */
+
+/* Верхняя линия спускается в центр и поворачивается на 45 градусов */
+.burgerButton.open span:nth-child(1) {
+  top: 11px;
+  transform: rotate(45deg);
+}
+
+/* Средняя линия мгновенно скрывается */
+.burgerButton.open span:nth-child(2) {
+  opacity: 0;
+  transform: scale(0);
+}
+
+/* Нижняя линия поднимается в центр и поворачивается на -45 градусов */
+.burgerButton.open span:nth-child(3) {
+  top: 11px;
+  transform: rotate(-45deg);
+}

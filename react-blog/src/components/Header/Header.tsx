@@ -1,20 +1,28 @@
-import { AppBar, Container, Toolbar, Typography } from "@mui/material"
+import { useState } from "react";
+import styles from "./Header.module.css";
+import { ThemeToggle } from "./ThemeToggle";
 
-export const Header = () => {
+export function Header() {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <AppBar
-      position="static"
-      color="inherit"
-      elevation={0}
-      sx={{ borderBottom: 1, borderColor: 'divider' }}
-    >
-      <Container>
-        <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
-          <Typography variant="h6" component="h1" color="primary">
-            Мой первый проект
-          </Typography>
-        </Toolbar>
-      </Container>
-    </AppBar>
-  )
+    <header className={styles.customHeader}>
+      <div className={styles.headerLeft}>
+        <button
+          className={`${styles.burgerButton} ${isOpen ? styles.open : ""}`}
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label="Toggle menu"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+      <div className={styles.headerRight}>
+        <span className={styles.iconSearch}>🔍</span>
+        <span className={styles.iconProfile}>👤</span>
+        <ThemeToggle />
+      </div>
+    </header>
+  );
 }
