@@ -1,14 +1,14 @@
 // import { Header } from "@/components/Header/Header";
 // import { Footer } from "@/components/Footer/Footer";
 // import { PrevPost } from "../../PrevPost/PrevPost";
+// import { Header } from "components/Header/Header";
+// import { Footer } from "components/Footer/Footer";
+// import type { Post } from "@/components/PostCard/types";
 import { PrevPost } from "components/PrevPost/PrevPost";
 import { NextPost } from "components/NextPost/NextPost";
 import styles from "./PostCardFull.module.css";
-// import type { Post } from "@/components/PostCard/types";
 import type { Post } from "../types";
 import { Container } from "@mui/material";
-// import { Header } from "components/Header/Header";
-// import { Footer } from "components/Footer/Footer";
 
 interface PostCardFullProps {
   post: Post;

@@ -1,12 +1,13 @@
-import { Header } from "../Header/Header";
-import { Footer } from "../Footer/Footer";
+// import { Header } from "../Header/Header";
+// import { Footer } from "../Footer/Footer";
 import { postsAll } from "../PostCard/mockData"; // Импорт массива данных
 // import { PostCardLarge } from "../PostCard/PostCardLarge";
 import { PostCardMedium } from "../PostCard/Medium/PostCardMedium";
 import { PostCardSmall } from "../PostCard/Small/PostCardSmall";
-import "./PostsBlog.css";
+import styles from "./PostsBlog.module.css";
+import { Container } from "@mui/material";
 
-export const PostsPage = () => {
+export const PostsBlog = () => {
   // Левая колонка (5 постов)
   // const largePost = postsAll[0]; // Пост 1 (Большой сверху)
   const mediumRow1 = postsAll.slice(0, 2); // Посты 2 и 3 (Первый ряд средних)
@@ -17,34 +18,36 @@ export const PostsPage = () => {
   const sidebarPosts = postsAll.slice(6, 12); // Посты с 6 по 11 включительно (Маленькие)
 
   return (
-    <div className="page-container">
-      <Header />
-      <h2 className="page-title">Blog</h2>
-      сюда добавить табы
-      <div className="page-wrapper">
+    <Container>
+      {/* <div className={styles.pageContainer}> */}
+      {/* <div className={styles.card}></div> */}
+      {/* <Header /> */}
+      <div className={styles.pageWrapper}>
+        <h2 className={styles.pageTitle}>Blog</h2>
+        сюда добавить табы
         {/* Главная двухколоночная сетка */}
-        <div className="main-grid">
+        <div className={styles.mainGrid}>
           {/* ЛЕВАЯ ЧАСТЬ: Основная лента (5 постов) */}
-          <div className="news-feed">
+          <div className={styles.newsFeed}>
             {/* 1. Крупный верхний пост */}
             {/* {largePost && <PostCardLarge post={largePost} />} */}
 
             {/* 1. Первый ряд средних постов */}
-            <div className="medium-cards-grid">
+            <div className={styles.mediumCardsGrid}>
               {mediumRow1.map((post) => (
                 <PostCardMedium key={post.id} post={post} />
               ))}
             </div>
 
             {/* 2. Второй ряд средних постов */}
-            <div className="medium-cards-grid">
+            <div className={styles.mediumCardsGrid}>
               {mediumRow2.map((post) => (
                 <PostCardMedium key={post.id} post={post} />
               ))}
             </div>
 
             {/* 3. Третий ряд средних постов */}
-            <div className="medium-cards-grid">
+            <div className={styles.mediumCardsGrid}>
               {mediumRow3.map((post) => (
                 <PostCardMedium key={post.id} post={post} />
               ))}
@@ -52,7 +55,7 @@ export const PostsPage = () => {
           </div>
 
           {/* ПРАВАЯ ЧАСТЬ: Боковая панель (6 постов) */}
-          <div className="sidebar-panel">
+          <div className={styles.sidebarPanel}>
             {sidebarPosts.map((post) => (
               <PostCardSmall key={post.id} post={post} />
             ))}
@@ -60,7 +63,8 @@ export const PostsPage = () => {
         </div>
         сюда добавить пагинацию
       </div>
-      <Footer />
-    </div>
+      {/* <Footer /> */}
+      {/* </div> */}
+    </Container>
   );
 };

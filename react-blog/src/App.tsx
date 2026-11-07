@@ -18,7 +18,7 @@ import {
   postMediumMock,
   postSmallMock,
 } from "./components/PostCard/mockData";
-import { PostsPage } from "./components/PostsBlog/PostsBlog";
+import { PostsBlog } from "./components/PostsBlog/PostsBlog";
 
 // import { ButtonSignIn, ButtonMenu } from "./components/Button/ButtonTitle";
 
@@ -57,8 +57,9 @@ export function App() {
   //   "signin",
   // );
   // return (
-  //   <>
+  //   <Layout>
   //     {currentScreen === "signin" ? <SignIn /> : <Success />}
+  //     {/* {currentScreen === "signin" ? <Success /> : <SignIn />} */}
   //     {/* Кнопка переключения экранов для теста */}
   //     <button
   //       style={{
@@ -79,28 +80,28 @@ export function App() {
   //     >
   //       Показать страницу: {currentScreen === "signin" ? "Success" : "Sign In"}
   //     </button>
-  //   </>
+  //   </Layout>
   // );
   //HW_40_2
   // Фейковые данные для навигации согласно интерфейсу prevPost и nextPost
-  const prevPost = {
-    title: "10 Things to Know...",
-    link: "/posts/1",
-  };
+  // const prevPost = {
+  //   title: "10 Things to Know...",
+  //   link: "/posts/1",
+  // };
 
-  const nextPost = {
-    title: "A Beautiful Video...",
-    link: "/posts/3",
-  };
+  // const nextPost = {
+  //   title: "A Beautiful Video...",
+  //   link: "/posts/3",
+  // };
   return (
     <Layout>
       {/* <Box> */}
-      {/* <PostsPage /> */}
-      <PostCardFull
+      <PostsBlog />
+      {/* <PostCardFull
         post={postFullMock}
         prevPost={prevPost}
         nextPost={nextPost}
-      />
+      /> */}
       {/* </Box> */}
     </Layout>
   );

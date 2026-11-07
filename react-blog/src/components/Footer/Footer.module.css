@@ -1,10 +1,7 @@
 .customFooter {
   display: flex;
   justify-content: space-between;
-  padding: 24px;
+  padding: 20px;
   font-size: 13px;
-  color: #888;
-  margin-top: auto;
-  border-top: 1px solid #e5e7eb;
-  background-color: #f9fafb;
+  border-top: 1px solid;
 }/*# sourceMappingURL=Footer.module.css.map */

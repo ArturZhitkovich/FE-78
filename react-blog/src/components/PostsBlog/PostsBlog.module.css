@@ -1,66 +1,59 @@
 @charset "UTF-8";
 /* Контейнер всей страницы */
-.page-container {
-  min-height: 100vh;
-  background-color: #f8f9fa;
-  /* padding: 2rem 1rem; */
-}
-
-.page-title {
+.pageTitle {
   font-size: 24px;
   font-weight: 600;
   text-align: left;
-  padding: 15px 24px;
 }
 
-.page-wrapper {
+.pageWrapper {
   max-width: 1200px;
   margin: 0 auto;
 }
 
 /* Главная двухколоночная сетка (Лента + Боковая панель) */
-.main-grid {
+.mainGrid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.5rem;
   align-items: start;
 }
+
 @media (min-width: 1024px) {
-  .main-grid {
+  .mainGrid {
     grid-template-columns: 2fr 1fr;
   }
 }
-
 /* Левая новостная лента */
-.news-feed {
+.newsFeed {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
 /* Сетки для средних карточек (2 в ряд) */
-.medium-cards-grid {
+.mediumCardsGrid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
 }
+
 @media (min-width: 640px) {
-  .medium-cards-grid {
+  .mediumCardsGrid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
-
 /* Правая боковая панель */
-.sidebar-panel {
+.sidebarPanel {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.card-image-fallback {
+.cardImageFallback {
   max-width: 100%;
   height: auto;
   -o-object-fit: cover;
   object-fit: cover;
   border-radius: 6px;
-}
+}/*# sourceMappingURL=PostsBlog.module.css.map */

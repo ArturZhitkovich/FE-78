@@ -3,14 +3,14 @@
 /* Общие стили для страницы */
 
 /* Главный контейнер поста — теперь это единый вертикальный холст */
-.card {
-  background-color: #ffffff;
-  max-width: 800px;
-  width: 100%;
-  padding: 32px; /* Добавили внутренние отступы для всей страницы */
-  box-shadow: none;
-  box-sizing: border-box;
-}
+// .card {
+//   background-color: #ffffff;
+//   max-width: 800px;
+//   width: 100%;
+//   padding: 32px; /* Добавили внутренние отступы для всей страницы */
+//   box-shadow: none;
+//   box-sizing: border-box;
+// }
 
 /* Выстраиваем заголовок, картинку и текст строго в один столбец */
 .mainContent {
@@ -25,17 +25,17 @@
   width: 100%;
 }
 
-.date {
-  text-align: left;
-  color: #8a8a8a;
-  font-size: 14px;
-  margin-bottom: 12px;
-}
+// .date {
+//   text-align: left;
+//   color: #8a8a8a;
+//   font-size: 14px;
+//   margin-bottom: 12px;
+// }
 
 /* Крупный заголовок статьи */
 .title {
   text-align: left;
-  color: #1a1a1a;
+  // color: #1a1a1a;
   font-size: 36px;
   font-weight: 800;
   line-height: 1.2;
@@ -59,7 +59,7 @@
 /* Стилизация основного текста под изображением */
 .text {
   text-align: left;
-  color: #333333;
+  // color: #333333;
   font-size: 18px;
   line-height: 1.65;
   margin: 0;
@@ -69,8 +69,9 @@
 .footer {
   display: flex;
   justify-content: space-between;
+  // padding-bottom: 5px;
   /* align-items: center; */
-  color: #6c757d;
+  // color: #6c757d;
 }
 
 .actionsLeft,
@@ -83,19 +84,19 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #6c757d;
+  // color: #6c757d;
   font-size: 18px;
   padding: 6px;
-  display: flex;
+  // display: flex;
   align-items: center;
-  justify-content: center;
+  // justify-content: center;
   transition:
     color 0.2s,
     transform 0.2s;
 }
 
 .iconButton:hover {
-  color: #1a1a1a;
+  // color: #1a1a1a;
   transform: translateY(-1px);
 }
 
@@ -104,7 +105,7 @@
   justify-content: space-between; /* Разносит блоки по краям: один влево, другой вправо */
   align-items: flex-start; /* Выравнивает их по верхней линии */
   border-top: 1px solid #e0e0e0; /* Тонкая серая линия сверху, как на макете */
-  margin-top: 24px; /* Отступ от панели с лайками */
-  padding-top: 24px; /* Внутренний отступ от линии до текста */
-  width: 100%; /* Растягиваем на всю ширину карточки */
+  // margin-top: 24px; /* Отступ от панели с лайками */
+  padding: 20px; /* Внутренний отступ от линии до текста */
+  // width: 100%; /* Растягиваем на всю ширину карточки */
 }
