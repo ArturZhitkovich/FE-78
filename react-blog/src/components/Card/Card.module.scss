@@ -2,7 +2,49 @@
   border: 1px solid ;
   border-radius: 20px;
   min-width: 100px;
-  max-width: 320px;
+  max-width: 600px;
 
   padding: 12px;
+
+  &Content {
+    display: flex;
+  }
+
+  &Text {
+    flex: 2;
+  }
+
+  &Image {
+    flex: 1;
+    width: 100%;
+    height: auto;
+
+    img {
+      width: 100%;
+    }
+  }
+
+  &_medium {
+    max-width: 460px;
+
+    .cardContent {
+       display: flex;
+       flex-direction: column-reverse;
+    }
+
+    &Text {
+      flex: 1;
+    }
+
+    &Image {
+      flex: 1;
+      width: 100%;
+      height: auto;
+    }
+  }
+
+  &_small {
+    max-width: 320px;
+
+  }
 }

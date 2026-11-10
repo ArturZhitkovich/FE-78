@@ -1,87 +1,51 @@
-import { Box,  Button,  Typography } from '@mui/material'
+import { Box, Skeleton } from '@mui/material'
 import { Layout } from './components/Layout/Layout'
 import { Card } from './components/Card/Card';
+import { MOCK_POSTS } from './mocks';
+import type { Post } from './types/post';
+import { useEffect, useState } from 'react';
 
-const label = { slotProps: { input: { 'aria-label': 'Checkbox demo' } } };
+const getPosts = (): Promise<Post[]> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(MOCK_POSTS)
+    }, 3000);
+  })
+}
 
 function App() {
+  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [posts, setPosts] = useState<Post[]>([])
+
+  const firstPost = posts[0] ?? null
+  const mediumPosts = posts.slice(1,5)
+  const smallPosts = posts.slice(5)
+
+  useEffect(() => {
+    getPosts()
+      .then((fetched) => {
+        setPosts(fetched)
+      })
+      .catch(() => {
+        console.error('error')
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
+  }, [])
+
   return (
    <Layout>
-    <Box>
 
-      <Card />
-      <Card size='small'/>
-      <Card size='large'/>
-
-      <Box>
-      <Typography variant='h1'>
-          h1. Heading
-        </Typography>
-      
-        <Typography variant="h2" gutterBottom >
-          h2. Heading
-        </Typography>
-        
-        <Typography variant="h3" gutterBottom>
-          h3. Heading
-        </Typography>
+    {isLoading ? <Skeleton height={300} width={600} /> : (
+      <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+        {firstPost && <Card key={firstPost.id} postData={firstPost} />}
+        {mediumPosts.map((post) => <Card key={post.id} postData={post} variant='medium' />)}
+        {smallPosts.map((post) => <Card key={post.id} postData={post} variant='small' />)}
       </Box>
+    )}
 
-
-
-      <Typography>Text</Typography>
-
-      <Button variant='contained'> Red</Button>
-      
-      
-      <Typography variant="h4" gutterBottom>
-        h4. Heading
-      </Typography>
-      <Typography variant="h5" gutterBottom>
-        h5. Heading
-      </Typography>
-      <Typography variant="h6" gutterBottom>
-        h6. Heading
-      </Typography>
-      <Typography variant="subtitle1" gutterBottom>
-        subtitle1. Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quos
-        blanditiis tenetur
-      </Typography>
-      <Typography variant="subtitle2" gutterBottom>
-        subtitle2. Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quos
-        blanditiis tenetur
-      </Typography>
-      <Typography variant="body1" gutterBottom>
-        body1. Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quos
-        blanditiis tenetur unde suscipit, quam beatae rerum inventore consectetur,
-        neque doloribus, cupiditate numquam dignissimos laborum fugiat deleniti? Eum
-        quasi quidem quibusdam.
-      </Typography>
-      <Typography variant="body2" gutterBottom>
-        body2. Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quos
-        blanditiis tenetur unde suscipit, quam beatae rerum inventore consectetur,
-        neque doloribus, cupiditate numquam dignissimos laborum fugiat deleniti? Eum
-        quasi quidem quibusdam.
-      </Typography>
-      <Typography variant="button" gutterBottom sx={{ display: 'block' }}>
-        button text
-      </Typography>
-      <Typography variant="caption" gutterBottom sx={{ display: 'block' }}>
-        caption text
-      </Typography>
-      <Typography variant="overline" gutterBottom sx={{ display: 'block' }}>
-        overline text
-      </Typography>
-      
-      <Typography>Title</Typography> 
-
-      {/* <Button>Click me</Button>
-
-      <TextField />
-
-      <Checkbox {...label} defaultChecked /> */}
-
-    </Box>
+   
    </Layout>
   )
 }

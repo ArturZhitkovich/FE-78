@@ -8,9 +8,6 @@ export const theme = createTheme({
       palette: {
         primary: { main: '#900020' },
         background: { default: '#f5f5f5', paper: '#ffffff' },
-        text: {
-          primary: '#900020'
-        }
       },
     },
     dark: {

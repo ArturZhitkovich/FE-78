@@ -8,14 +8,17 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps)  {
-  return <>
+  return <div>
+
     <Header />
+
     <Box component='main'>
       <Container>
         {children}
       </Container>
     </Box>
-  </>
+    
+  </div>
 }
 
 
