@@ -2,6 +2,7 @@ import { Box, Button, Typography } from "@mui/material"
 import styles from './Card.module.scss';
 import { useCallback, useEffect, useState } from "react";
 import type { Post } from "../../types/post";
+import { Link } from "react-router";
 
 export type VariantCard = 'large' | 'medium' | 'small' | 'search';
 
@@ -25,9 +26,14 @@ export const Card = (props: CardProps) => {
 
       <div className={styles.cardContent}>
         <div className={styles.cardText}>
+
+        
           <Typography variant="body2">{postData.date}</Typography>
           
-          <Typography variant={titleSize[variant]} >{postData.title}</Typography>
+          <Link to={`/posts/${postData.id}`}>
+            <Typography variant={titleSize[variant]} >{postData.title}</Typography>
+          </Link>
+
           { variant === 'large' && <Typography variant="body1" >{postData.text}</Typography>}
         </div>
 
