@@ -3,6 +3,7 @@ import styles from './Card.module.scss';
 import { useCallback, useEffect, useState } from "react";
 import type { Post } from "../../types/post";
 import { Link } from "react-router";
+import { PATHS } from "../../paths";
 
 export type VariantCard = 'large' | 'medium' | 'small' | 'search';
 
@@ -23,18 +24,15 @@ export const Card = (props: CardProps) => {
 
   return (
     <div className={`${styles.card} ${styles[`card_${variant}`]}`}> 
-
       <div className={styles.cardContent}>
         <div className={styles.cardText}>
-
-        
           <Typography variant="body2">{postData.date}</Typography>
           
-          <Link to={`/posts/${postData.id}`}>
+          <Link to={PATHS.post(String(postData.id))}>
             <Typography variant={titleSize[variant]} >{postData.title}</Typography>
           </Link>
 
-          { variant === 'large' && <Typography variant="body1" >{postData.text}</Typography>}
+          { variant === 'large' && <Typography variant="body1">{postData.text}</Typography>}
         </div>
 
         <div className={styles.cardImage} >

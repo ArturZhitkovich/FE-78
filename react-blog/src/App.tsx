@@ -59,6 +59,7 @@ import { NotFoundPage } from './pages/NotFoundPage/NotFoundPage'
 import { HomePage } from './pages/HomePage/HomePage';
 import { PostsPage } from './pages/PostsPage/PostsPage';
 import { PostPage } from './pages/PostPage/PostPage';
+import { PATHS } from './paths';
 
 function App() {
   return (
@@ -66,10 +67,10 @@ function App() {
       {/* Layout — общий каркас, страницы появляются на месте <Outlet /> */}
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
-        <Route path="about" element={<AboutPage />} />
+        <Route path={PATHS.about()} element={<AboutPage />} />
        
-        <Route path="posts" element={<PostsPage />} />
-        <Route path="posts/:id" element={<PostPage />} />
+        <Route path={PATHS.posts()} element={<PostsPage />} />
+        <Route path={PATHS.post(':id')} element={<PostPage />} />
         <Route path="*" element={<NotFoundPage />} /> 
       </Route>
     </Routes>
