@@ -1,6 +1,8 @@
 import { AppBar, Box, Button, Container, Toolbar, Typography } from "@mui/material"
 import { NavLink } from "react-router"
 import { PATHS } from "../../paths"
+import { ThemeToggle } from "./ThemeToggle"
+import { IsAuthToggle } from "./IsAuthToggle"
 
 const links = [
   { to: '/', label: 'Главная'},
@@ -23,6 +25,8 @@ export const Header = () => {
             Мой первый проект
           </Typography>
 
+          
+
         <Box component='nav' sx={{ display: 'flex', gap: 1}}>
           {links.map((link) => {
             return (
@@ -39,6 +43,12 @@ export const Header = () => {
             )
           })}
         </Box>
+
+        <Box sx={{ display: 'flex', gap: 1}}>
+          <IsAuthToggle />
+          <ThemeToggle />
+        </Box>
+       
 
 
         </Toolbar>
