@@ -1,0 +1,50 @@
+.appBar {
+  box-shadow: none;
+  padding: 0 15px;
+}
+
+.iconButton {
+  width: 48px !important; 
+  height: 48px !important;
+  padding: 0 !important;
+  border-radius: 0 !important; 
+  color: inherit !important;
+  background-color: transparent !important;
+
+  &:hover {
+    background-color: var(--header-btn-hover) !important;
+  }
+
+
+  &:active {
+    background-color: var(--header-btn-active ) !important;
+    transform: scale(0.92) !important;
+  }
+}
+.toolbar {
+  height: 48px; 
+  min-height: 48px !important; 
+  padding: 0 !important;
+  display: flex;
+  align-items: stretch; 
+}
+
+
+.leftZone {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0;
+}
+
+
+.spacer {
+  flex-grow: 1;
+}
+
+
+.rightZone {
+  display: flex;
+  align-items: center;
+  padding: 0;
+}

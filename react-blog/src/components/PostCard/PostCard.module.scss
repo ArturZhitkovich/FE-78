@@ -1,0 +1,101 @@
+.card {
+  background: transparent;
+  border-radius: 8px;
+  padding-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+
+
+  &.large { flex:2 }
+  &.medium { flex:1 }
+  &.small { flex:1 }
+}
+
+.info {
+  display: flex;
+
+  &.large { flex-direction: row; gap: 24px; align-items: flex-start; }
+  &.medium { flex-direction: column; gap: 8px; }
+  &.small { flex-direction: row; justify-content: space-between; align-items: flex-start; }
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+
+}
+
+.image {
+  object-fit: cover;
+
+  &.large { width: 50%; }
+  &.medium { width: 100%; height: 240px; }
+  &.small { width: 80px; height: 80px; }
+}
+
+.dateLabel {
+  font-size: 12px;
+  color: var(--mui-palette-text-secondary);
+  margin: 10px 0;
+}
+
+.title {
+  margin: 0;
+  color: var(--mui-palette-text-primary);
+  line-height: 32px;
+
+  &.large { font-size: 24px; margin-bottom: 16px; }
+  &.medium { font-size: 18px; margin-bottom: 14px; }
+  &.small { font-size: 12px; line-height: 22px; }
+}
+
+.text {
+  font-size: 14px;
+  color: var(--mui-palette-text-secondary);
+  line-height: 28px;
+  padding-bottom: 40px;
+  margin: 0;
+}
+
+
+.footer {
+  width: 100%;
+  padding: 10px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--mui-palette-divider);
+  margin-top: auto;
+}
+
+.iconGroupLeft,
+.iconGroupRight {
+  display: flex;
+  gap: 10px;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.iconBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--mui-palette-text-secondary);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--mui-palette-text-primary);
+  }
+}
+
+.countLike,
+.countDislike {
+  font-size: 14px;
+}

@@ -1,0 +1,35 @@
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main {
+  padding-top: 32px;
+  padding-bottom: 32px;
+  flex-grow: 1; 
+}
+
+
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px; 
+  margin-bottom: 32px; 
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--mui-palette-text-secondary);
+  text-decoration: none;
+
+  &:hover {
+    color: #2b3399;
+    text-decoration: underline;
+  }
+}

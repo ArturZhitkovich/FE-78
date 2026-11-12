@@ -1,0 +1,15 @@
+.titleContainer {
+  min-width: 150px;
+  width: 100%;
+  padding: 15px 0;
+  text-align: left;
+  background-color: transparent;
+}
+
+.titleStyled {
+  font-size: 35px;
+  font-weight: 700;
+  color: var(--mui-palette-text-primary);
+  margin: 0;
+  /* white-space: nowrap; */
+}
