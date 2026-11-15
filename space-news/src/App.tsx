@@ -1,15 +1,18 @@
+// src/App.tsx
 import React, { useEffect, useState } from 'react';
-import { ThemeProvider, createTheme, CssBaseline, IconButton, Box, Grid } from '@mui/material';
-import { Brightness4, Brightness7 } from '@mui/icons-material';
+import { ThemeProvider, createTheme, CssBaseline, Box, Grid } from '@mui/material';
 import { Layout } from './components/Layout/Layout';
+import { Header } from './components/Header/Header';
 import { PostCard } from './components/PostCard/PostCard';
 import { Typography } from './components/UI/Typography';
+import { SearchPage } from './pages/SearchPage';
+import { RegisterPage } from './pages/RegisterPage';
 import type { PostModel } from './types';
 
 const spaceImg = "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop";
 
-// Создаем массив с разными ID для наглядности
-const mockData: PostModel[] = Array.from({ length: 10 }).map((_, index) => ({
+// Генерируем 15 постов для наглядности
+const mockData: PostModel[] = Array.from({ length: 15 }).map((_, index) => ({
   id: index + 1,
   image: spaceImg,
   text: "Astronauts prep for new solar arrays on nearly seven-hour spacewalk...",
@@ -21,12 +24,14 @@ const mockData: PostModel[] = Array.from({ length: 10 }).map((_, index) => ({
   author: 1
 }));
 
+type Page = 'home' | 'search' | 'register';
+
 function App() {
   const [mode, setMode] = useState<'light' | 'dark'>('light');
   const [posts, setPosts] = useState<PostModel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState<Page>('home');
 
-  // Настройка темы (оставил как было)
   const theme = React.useMemo(
     () => createTheme({
       palette: {
@@ -39,71 +44,81 @@ function App() {
     }), [mode]
   );
 
-  // Имитация загрузки (оставил как было)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setPosts(mockData);
-      setLoading(false);
-    }, 1000);
-
-    return () => { clearTimeout(timer); };
+    const timer = setTimeout(() => { setPosts(mockData); setLoading(false); }, 1000);
+    return () => clearTimeout(timer);
   }, []);
 
-  // --- ЛОГИКА РАЗДЕЛЕНИЯ ПОСТОВ ---
-  // 1. Большой пост (индекс 0)
-  const largePost = posts[0];
-  // 2. Три маленьких поста для правой колонки (индексы 1, 2, 3)
-  const smallPosts = posts.slice(1, 4);
-  // 3. Остальные посты для нижней сетки (индексы 4 и далее)
-  const mediumPosts = posts.slice(4);
+  const toggleTheme = () => setMode(prev => prev === 'light' ? 'dark' : 'light');
+
+  const renderContent = () => {
+    if (loading) return <Typography color="text.primary">Loading posts...</Typography>;
+
+    switch (currentPage) {
+      case 'search': 
+        return <SearchPage posts={posts} />;
+      case 'register': 
+        return <RegisterPage onBack={() => setCurrentPage('home')} />;
+      case 'home':
+      default:{
+        
+        const largePost = posts[0];
+        
+        const smallPosts = posts.slice(1, 8); 
+        
+     
+        const mediumPosts = posts.slice(6);
+
+        return (
+          <Grid container spacing={2}>
+            
+            
+            <Grid size={{ xs: 12, md: 8 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                
+                {largePost && <PostCard post={largePost} variant="large" />}
+                
+                {/* 2. Сетка средних постов (по 2 в ряд) */}
+                {mediumPosts.length > 0 && (
+                  <Grid container spacing={2}>
+                    {mediumPosts.map((post) => (
+                      <Grid size={{ xs: 12, sm: 6 }} key={post.id}>
+                        <PostCard post={post} variant="medium" />
+                      </Grid>
+                    ))}
+                  </Grid>
+                )}
+              </Box>
+            </Grid>
+
+           
+            <Grid size={{ xs: 12, md: 4 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
+                
+                {smallPosts.map((post) => (
+                  <PostCard key={post.id} post={post} variant="small" />
+                ))}
+              </Box>
+            </Grid>
+
+          </Grid>
+        );
+      }
+    }
+  };
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Layout>
-        {/* Хедер */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h1" color="text.primary" sx={{ fontWeight: 700 }}>Space News</Typography>
-          <IconButton onClick={() => setMode(mode === 'light' ? 'dark' : 'light')} color="inherit">
-            {mode === 'light' ? <Brightness4 /> : <Brightness7 />}
-          </IconButton>
-        </Box>
-
-        {loading ? (
-          <Typography color="text.primary">Loading posts...</Typography>
-        ) : (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            
-            {/* ВЕРХНЯЯ ЧАСТЬ: Большой слева + 3 маленьких справа */}
-            <Grid container spacing={2}>
-              {/* Левая колонка (Большой пост) */}
-              <Grid size={{ xs: 12, md: 8 }}>
-                {largePost && <PostCard post={largePost} variant="large" />}
-              </Grid>
-              
-              {/* Правая колонка (Маленькие посты) */}
-              <Grid size={{ xs: 12, md: 4 }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {smallPosts.map((post) => (
-                    <PostCard key={post.id} post={post} variant="small" />
-                  ))}
-                </Box>
-              </Grid>
-            </Grid>
-
-            {/* НИЖНЯЯ ЧАСТЬ: Сетка из средних постов (по 3 в ряд) */}
-            {mediumPosts.length > 0 && (
-              <Grid container spacing={2}>
-                {mediumPosts.map((post) => (
-                  <Grid size={{ xs: 12, sm: 6, md: 4 }} key={post.id}>
-                    <PostCard post={post} variant="medium" />
-                  </Grid>
-                ))}
-              </Grid>
-            )}
-
-          </Box>
-        )}
+        <Header 
+          mode={mode} 
+          toggleTheme={toggleTheme} 
+          onSearchClick={() => setCurrentPage('search')}
+          onLoginClick={() => setCurrentPage('register')}
+          onHomeClick={() => setCurrentPage('home')}
+        />
+        {renderContent()}
       </Layout>
     </ThemeProvider>
   );
