@@ -50,6 +50,17 @@
   &.small { font-size: 12px; line-height: 22px; }
 }
 
+.titleLink {
+  text-decoration: none;
+  color: inherit;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--mui-palette-primary-main);
+    text-decoration: none;
+  }
+}
+
 .text {
   font-size: 14px;
   color: var(--mui-palette-text-secondary);
