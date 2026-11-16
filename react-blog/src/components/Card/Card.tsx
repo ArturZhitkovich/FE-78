@@ -1,9 +1,12 @@
-import { Box, Button, Typography } from "@mui/material"
+import { Typography } from "@mui/material"
 import styles from './Card.module.scss';
-import { useCallback, useEffect, useState } from "react";
+import {  useCallback, useState } from "react";
 import type { Post } from "../../types/post";
 import { Link } from "react-router";
 import { PATHS } from "../../paths";
+import CardFooter from "./CardFooter";
+import { useAppDispatch } from "../../store/hooks";
+import { selectPost } from "../../store/selectedPostSlice";
 
 export type VariantCard = 'large' | 'medium' | 'small' | 'search';
 
@@ -15,6 +18,12 @@ interface CardProps {
 // stateless 
 export const Card = (props: CardProps) => {
   const { postData, variant = 'large' } = props;
+
+  const dispatch = useAppDispatch()
+
+  const onShow = useCallback(() => {
+    dispatch(selectPost(postData))
+  }, [dispatch, postData])
 
   const titleSize = {
     large: 'h3',
@@ -40,53 +49,7 @@ export const Card = (props: CardProps) => {
         </div>
       </div>
 
-      <CardFooter />
+      <CardFooter onShow={onShow} />
     </div>
-  )
-}
-
-const useLikePost = () => {
- const [likes, setLikes] = useState<number>(0);
-
-  useEffect(() => {
-    document.title = `Счётчик: ${likes}`;
-  }, [likes]);
-
-  const increment = useCallback(() => {
-    setLikes(likes + 1)
-  }, [])
-
-  return [likes, increment] as [number, () => void]
-}
-
-const useDislikePost = (): [number, () => void] => {
-  const [dislikes, setDislikes] = useState<number>(0)
-
-  const decrement = useCallback(() => {
-    setDislikes(prev => prev + 1)
-  }, [])
-
-  return [dislikes, decrement]
-}
-
-
-
-// statefull 
-const CardFooter = () => {
-  const [likes, increment] = useLikePost()
-  const [dislikes, decrement] = useDislikePost()
-
-  return (
-    <Box sx={{'display': 'flex', justifyContent:'space-between'}}>
-      <div>
-        <Button onClick={increment}>Like {likes > 0 && likes}</Button>
-        <Button onClick={decrement}>Dislike {dislikes > 0 && dislikes}</Button>
-      </div>
-
-      <div>
-        <Button>saved</Button>
-        <Button>more</Button>
-      </div>
-    </Box>
   )
 }

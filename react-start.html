@@ -411,6 +411,7 @@ td:first-child { white-space: nowrap; }
 .flow span { color: var(--muted); font-size: 14.5px; }
 @media (max-width: 520px) { .flow li { grid-template-columns: 24px 1fr; } .flow span { grid-column: 2; } }
 .flow.strict li { grid-template-columns: 28px 90px 1fr; }
+@media (min-width: 521px) { .flow.wide li { grid-template-columns: 28px 110px 1fr; } }
 .flow.strict .s-mount b { color: var(--tk-string); }
 .flow.strict .s-unmount b { color: var(--tk-fn); }
 .phase-list { list-style: none; padding: 0 !important; }
@@ -482,6 +483,7 @@ footer { grid-column: 1 / -1; color: var(--muted); font-size: 13px; border-top: 
         <li><b>Vite</b> 8</li>
         <li><b>SCSS</b> Modules</li>
         <li><b>MUI</b> 9</li>
+        <li><b>Redux</b> Toolkit</li>
       </ul>
     </div>
     <figure class="preview" style="margin:0">
@@ -555,6 +557,20 @@ footer { grid-column: 1 / -1; color: var(--muted); font-size: 13px; border-top: 
       <li><a href="#r-404"><span>4.7</span>Страница 404</a></li>
       <li><a href="#r-structure"><span>4.8</span>Структура</a></li>
       <li><a href="#r-mistakes"><span>4.9</span>Частые ошибки</a></li>
+    </ol>
+    <p class="toc-group">Глава 5 · Redux</p>
+    <ol>
+      <li><a href="#x-why"><span>5.1</span>Зачем Redux</a></li>
+      <li><a href="#x-terms"><span>5.2</span>Понятия</a></li>
+      <li><a href="#x-install"><span>5.3</span>Установка</a></li>
+      <li><a href="#x-slice"><span>5.4</span>Slice</a></li>
+      <li><a href="#x-store"><span>5.5</span>Store</a></li>
+      <li><a href="#x-hooks"><span>5.6</span>Хуки с типами</a></li>
+      <li><a href="#x-provider"><span>5.7</span>Provider</a></li>
+      <li><a href="#x-practice"><span>5.8</span>Выбранный пост</a></li>
+      <li><a href="#x-check"><span>5.9</span>Проверяем</a></li>
+      <li><a href="#x-structure"><span>5.10</span>Структура</a></li>
+      <li><a href="#x-mistakes"><span>5.11</span>Частые ошибки</a></li>
     </ol>
   </nav>
 
@@ -1746,9 +1762,401 @@ export const NotFoundPage = () =&gt; {
         <li><b>На хостинге 404 при обновлении <code>/posts</code></b>Сервер не знает про маршруты React. На хостинге нужно настроить, чтобы все адреса отдавали <code>index.html</code>. В <code>npm run dev</code> всё работает само.</li>
       </ul>
     </section>
+
+    <header class="chapter" id="ch5">
+      <p class="eyebrow">Глава 5</p>
+      <h2 class="chapter-title">Redux: общее состояние приложения</h2>
+      <p>Одно хранилище данных на всё приложение: любой компонент читает и меняет его без пропсов. На практике храним в Redux выбранный пост.</p>
+    </header>
+
+    <section id="x-why">
+      <div class="step-head"><span class="step-num">5.1</span><h2>Зачем нужен Redux</h2></div>
+      <p>Пока данные нужны одному компоненту, хватает <code>useState</code>. Проблемы начинаются, когда одни и те же данные нужны <b>разным частям приложения</b>.</p>
+      <p>Пример из нашего блога: пользователь выбрал пост в списке. Этот выбор хотим видеть:</p>
+      <ul>
+        <li>в списке постов, чтобы подсветить выбранный;</li>
+        <li>в шапке сайта: «Выбран: Первый пост»;</li>
+        <li>в отдельной карточке под списком.</li>
+      </ul>
+      <p>С <code>useState</code> здесь две проблемы:</p>
+      <ol class="rules">
+        <li><b>Prop drilling («проброс пропсов»).</b> <code>Header</code> и <code>PostsPage</code> не родственники. Чтобы они видели одно значение, <code>useState</code> придётся поднять в <code>App</code> и передавать вниз через компоненты, которым эти данные вообще не нужны.</li>
+        <li><b>Состояние пропадает.</b> <code>useState</code> живёт, пока живёт компонент. Ушли со страницы <code>/posts</code> на <code>/about</code>: <code>PostsPage</code> размонтировался, выбор потерян.</li>
+      </ol>
+      <p><b>Redux</b> — одно общее хранилище (<b>store</b>) для всего приложения. Оно живёт вне компонентов, поэтому:</p>
+      <ul class="reasons">
+        <li><b>Читать откуда угодно</b>Любой компонент берёт данные из store напрямую, без пропсов.</li>
+        <li><b>Менять откуда угодно</b>Один компонент изменил данные — перерисовались все, кто их читает.</li>
+        <li><b>Не теряется</b>Данные остаются при переходе между страницами.</li>
+      </ul>
+      <p>Используем <b>Redux Toolkit</b> (RTK) — официальный современный способ писать на Redux. Старый «чистый» Redux со <code>switch</code> и константами <code>ACTION_TYPES</code> в новых проектах не пишут.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Инструмент</th><th>Когда использовать</th></tr></thead>
+        <tbody>
+          <tr><td><code>useState</code></td><td>данные нужны одному компоненту (и, может, его детям): открыто ли меню, текст в поле</td></tr>
+          <tr><td><code>useContext</code></td><td>редко меняющиеся данные для всего дерева: тема, язык, «залогинен ли»</td></tr>
+          <tr><td><b>Redux</b></td><td>данные нужны многим компонентам в разных местах и часто меняются: выбранный пост, корзина, фильтры, пользователь</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note warn"><span class="note-label">Не всё подряд в Redux</span><p>Открыта ли модалка, что введено в поле — это локальное состояние, ему место в <code>useState</code>.</p></div>
+    </section>
+
+    <section id="x-terms">
+      <div class="step-head"><span class="step-num">5.2</span><h2>Главные понятия</h2></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Понятие</th><th>Что это</th><th>Пример</th></tr></thead>
+        <tbody>
+          <tr><td><b>store</b></td><td>хранилище: один большой объект со всем состоянием приложения</td><td><code>{ selectedPost: { post: null } }</code></td></tr>
+          <tr><td><b>slice</b></td><td>«кусок» store про одну тему + функции, которые его меняют</td><td><code>selectedPostSlice</code></td></tr>
+          <tr><td><b>action</b></td><td>объект-событие «что случилось»: <code>type</code> + данные <code>payload</code></td><td><code>{ type: 'selectedPost/selectPost', payload: post }</code></td></tr>
+          <tr><td><b>reducer</b></td><td>функция, которая по action меняет state</td><td><code>selectPost: (state, action) =&gt; { ... }</code></td></tr>
+          <tr><td><b>dispatch</b></td><td>«отправить» action в store</td><td><code>dispatch(selectPost(post))</code></td></tr>
+          <tr><td><b>selector</b></td><td>функция, которая достаёт нужное из store</td><td><code>(state) =&gt; state.selectedPost.post</code></td></tr>
+        </tbody>
+      </table></div>
+      <h3>Как ходят данные</h3>
+      <ol class="flow wide" aria-label="Путь данных в Redux">
+        <li><b>Клик</b><span>пользователь нажал на пост</span></li>
+        <li><b>dispatch</b><span>компонент вызывает <code>dispatch(selectPost(post))</code></span></li>
+        <li><b>reducer</b><span>Redux находит нужный reducer, тот записывает пост в state</span></li>
+        <li><b>store</b><span>в store лежит новый state</span></li>
+        <li><b>useSelector</b><span>все компоненты, которые читают выбранный пост, перерисовываются</span></li>
+      </ol>
+      <div class="note"><span class="note-label">Одно направление</span><p>Данные всегда идут по кругу в одну сторону. Компонент не меняет store напрямую, а только отправляет action.</p></div>
+    </section>
+
+    <section id="x-install">
+      <div class="step-head"><span class="step-num">5.3</span><h2>Устанавливаем</h2></div>
+      <div class="code"><div class="code-head"><span class="file">Терминал</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-bash">npm install @reduxjs/toolkit react-redux</code></pre></div>
+      <ul>
+        <li><code>@reduxjs/toolkit</code> — сам Redux и удобные функции: <code>createSlice</code>, <code>configureStore</code>;</li>
+        <li><code>react-redux</code> — связь с React: <code>Provider</code>, <code>useSelector</code>, <code>useDispatch</code>.</li>
+      </ul>
+      <p>Всё, что связано с Redux, кладём в папку <code>src/store/</code>.</p>
+    </section>
+
+    <section id="x-slice">
+      <div class="step-head"><span class="step-num">5.4</span><h2>Создаём slice</h2></div>
+      <p>Slice описывает один кусок состояния: как он выглядит, с чего начинается и как меняется.</p>
+      <div class="code"><div class="code-head"><span class="file">src/store/selectedPostSlice.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { Post } from '../data/posts';
+import type { RootState } from './store';
+
+// 1. Как выглядит этот кусок состояния
+type SelectedPostState = {
+  post: Post | null;
+};
+
+// 2. Значение при старте приложения: ничего не выбрано
+const initialState: SelectedPostState = {
+  post: null,
+};
+
+// 3. Слайс = состояние + функции, которые его меняют
+export const selectedPostSlice = createSlice({
+  name: 'selectedPost',
+  initialState,
+  reducers: {
+    // action.payload — то, что передали при вызове: selectPost(post)
+    selectPost: (state, action: PayloadAction&lt;Post&gt;) =&gt; {
+      state.post = action.payload;
+    },
+    clearSelectedPost: (state) =&gt; {
+      state.post = null;
+    },
+  },
+});
+
+// 4. Action creators — их вызываем в компонентах через dispatch
+export const { selectPost, clearSelectedPost } = selectedPostSlice.actions;
+
+// 5. Селектор — функция, которая достаёт нужное из store
+export const selectSelectedPost = (state: RootState) =&gt; state.selectedPost.post;
+
+// 6. Reducer — подключаем в store
+export default selectedPostSlice.reducer;</code></pre></div>
+      <ul>
+        <li><code>name</code> — префикс для action: <code>selectPost</code> превратится в <code>{ type: 'selectedPost/selectPost' }</code>.</li>
+        <li><code>reducers</code> — по одной функции на каждое действие. <code>createSlice</code> сам создаёт из них <b>action creators</b>: <code>selectPost(post)</code> вернёт готовый объект <code>{ type, payload }</code>.</li>
+        <li><code>PayloadAction&lt;Post&gt;</code> говорит TypeScript, что в <code>payload</code> лежит пост.</li>
+      </ul>
+      <div class="note"><span class="note-label">Почему можно писать state.post = …</span><p>В React state менять напрямую нельзя. Redux Toolkit внутри использует библиотеку <b>Immer</b>: мы пишем так, будто меняем объект, а Immer сам создаёт новую копию. Так можно <b>только внутри <code>createSlice</code></b>.</p></div>
+    </section>
+
+    <section id="x-store">
+      <div class="step-head"><span class="step-num">5.5</span><h2>Создаём store</h2></div>
+      <div class="code"><div class="code-head"><span class="file">src/store/store.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">import { configureStore } from '@reduxjs/toolkit';
+import selectedPostReducer from './selectedPostSlice';
+
+export const store = configureStore({
+  reducer: {
+    // ключ selectedPost — так этот кусок будет называться в state
+    selectedPost: selectedPostReducer,
+  },
+});
+
+// Типы для TypeScript: TS сам выводит их из store
+export type RootState = ReturnType&lt;typeof store.getState&gt;;
+export type AppDispatch = typeof store.dispatch;</code></pre></div>
+      <p>Store собирается из слайсов. Появится новый слайс, например корзина, — добавим строку <code>cart: cartReducer</code>, и в state появится <code>state.cart</code>.</p>
+    </section>
+
+    <section id="x-hooks">
+      <div class="step-head"><span class="step-num">5.6</span><h2>Хуки с типами</h2></div>
+      <p>Обычные <code>useSelector</code> и <code>useDispatch</code> не знают, как устроен наш store. Делаем их версии с типами один раз и дальше используем только их:</p>
+      <div class="code"><div class="code-head"><span class="file">src/store/hooks.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">import { useDispatch, useSelector } from 'react-redux';
+import type { AppDispatch, RootState } from './store';
+
+// Те же useDispatch и useSelector, но уже знают типы нашего store
+export const useAppDispatch = useDispatch.withTypes&lt;AppDispatch&gt;();
+export const useAppSelector = useSelector.withTypes&lt;RootState&gt;();</code></pre></div>
+      <p>Теперь VS Code подсказывает поля state: пишем <code>state.</code> и видим <code>selectedPost</code>.</p>
+    </section>
+
+    <section id="x-provider">
+      <div class="step-head"><span class="step-num">5.7</span><h2>Подключаем store</h2></div>
+      <p>Оборачиваем приложение в <code>Provider</code>, как <code>BrowserRouter</code> и <code>ThemeProvider</code>. Теперь store доступен в любом компоненте:</p>
+      <div class="code"><div class="code-head"><span class="file">src/main.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router';
+import { Provider } from 'react-redux';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { theme } from './theme/theme';
+import { store } from './store/store';
+import App from './App';
+
+createRoot(document.getElementById('root')!).render(
+  &lt;StrictMode&gt;
+    &lt;Provider store={store}&gt;
+      &lt;BrowserRouter&gt;
+        &lt;ThemeProvider theme={theme} defaultMode="system"&gt;
+          &lt;CssBaseline /&gt;
+          &lt;App /&gt;
+        &lt;/ThemeProvider&gt;
+      &lt;/BrowserRouter&gt;
+    &lt;/Provider&gt;
+  &lt;/StrictMode&gt;,
+);</code></pre></div>
+    </section>
+
+    <section id="x-practice">
+      <div class="step-head"><span class="step-num">5.8</span><h2>Практика: храним выбранный пост</h2></div>
+      <p>Задача: клик по посту в списке <b>выбирает</b> его. Выбранный пост:</p>
+      <ul>
+        <li>подсвечивается в списке;</li>
+        <li>показывается в карточке под списком;</li>
+        <li>виден в шапке на любой странице;</li>
+        <li>не теряется при переходе на другую страницу.</li>
+      </ul>
+      <h3>Список постов: записываем в store</h3>
+      <div class="code"><div class="code-head"><span class="file">src/pages/PostsPage/PostsPage.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { Link } from 'react-router';
+import {
+  Button,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Typography,
+} from '@mui/material';
+import { posts } from '../../data/posts';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { selectPost, selectSelectedPost } from '../../store/selectedPostSlice';
+import { SelectedPost } from '../../components/SelectedPost/SelectedPost';
+
+export const PostsPage = () =&gt; {
+  const dispatch = useAppDispatch();
+  // читаем из store: какой пост сейчас выбран
+  const selectedPost = useAppSelector(selectSelectedPost);
+
+  return (
+    &lt;&gt;
+      &lt;Typography variant="h4" gutterBottom&gt;
+        Посты
+      &lt;/Typography&gt;
+
+      &lt;List&gt;
+        {posts.map((post) =&gt; (
+          &lt;ListItem
+            key={post.id}
+            disablePadding
+            secondaryAction={
+              &lt;Button component={Link} to={`/posts/${post.id}`} size="small"&gt;
+                Читать
+              &lt;/Button&gt;
+            }
+          &gt;
+            &lt;ListItemButton
+              // подсвечиваем выбранный пост
+              selected={selectedPost?.id === post.id}
+              // кладём пост в store
+              onClick={() =&gt; dispatch(selectPost(post))}
+            &gt;
+              &lt;ListItemText primary={post.title} /&gt;
+            &lt;/ListItemButton&gt;
+          &lt;/ListItem&gt;
+        ))}
+      &lt;/List&gt;
+
+      &lt;SelectedPost /&gt;
+    &lt;/&gt;
+  );
+};</code></pre></div>
+      <ul>
+        <li><code>useAppDispatch()</code> — получаем функцию <code>dispatch</code>.</li>
+        <li><code>dispatch(selectPost(post))</code> — отправляем action «выбрали этот пост».</li>
+        <li><code>useAppSelector(selectSelectedPost)</code> — читаем выбранный пост. Когда он изменится, компонент перерисуется сам.</li>
+      </ul>
+      <h3>Карточка выбранного поста: читаем из store</h3>
+      <p>Обратите внимание: <code>SelectedPost</code> <b>не получает пропсов</b>. Он сам берёт пост из store.</p>
+      <div class="code"><div class="code-head"><span class="file">src/components/SelectedPost/SelectedPost.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { Button, Paper, Typography } from '@mui/material';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { clearSelectedPost, selectSelectedPost } from '../../store/selectedPostSlice';
+
+export const SelectedPost = () =&gt; {
+  const dispatch = useAppDispatch();
+  const post = useAppSelector(selectSelectedPost);
+
+  if (!post) {
+    return &lt;Typography color="text.secondary"&gt;Выберите пост из списка&lt;/Typography&gt;;
+  }
+
+  return (
+    &lt;Paper variant="outlined" sx={{ p: 2 }}&gt;
+      &lt;Typography variant="overline"&gt;Выбранный пост&lt;/Typography&gt;
+      &lt;Typography variant="h5" gutterBottom&gt;
+        {post.title}
+      &lt;/Typography&gt;
+      &lt;Typography sx={{ mb: 2 }}&gt;{post.text}&lt;/Typography&gt;
+      &lt;Button onClick={() =&gt; dispatch(clearSelectedPost())}&gt;Сбросить выбор&lt;/Button&gt;
+    &lt;/Paper&gt;
+  );
+};</code></pre></div>
+      <h3>Шапка: тот же пост в другом конце приложения</h3>
+      <p><code>Header</code> и <code>PostsPage</code> никак не связаны пропсами, но видят одни и те же данные:</p>
+      <div class="code"><div class="code-head"><span class="file">src/components/Header/SelectedPostChip.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { Chip } from '@mui/material';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { clearSelectedPost, selectSelectedPost } from '../../store/selectedPostSlice';
+
+export const SelectedPostChip = () =&gt; {
+  const dispatch = useAppDispatch();
+  const post = useAppSelector(selectSelectedPost);
+
+  if (!post) return null;
+
+  return (
+    &lt;Chip
+      label={`Выбран: ${post.title}`}
+      color="primary"
+      variant="outlined"
+      // крестик на чипе сбрасывает выбор
+      onDelete={() =&gt; dispatch(clearSelectedPost())}
+    /&gt;
+  );
+};</code></pre></div>
+      <p>В <code>Header.tsx</code> добавляем чип рядом с кнопкой темы:</p>
+      <div class="code"><div class="code-head"><span class="file">src/components/Header/Header.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { SelectedPostChip } from './SelectedPostChip';
+
+// ...внутри &lt;Toolbar&gt;, перед &lt;ThemeToggle /&gt;
+&lt;SelectedPostChip /&gt;
+&lt;ThemeToggle /&gt;</code></pre></div>
+      <h3>Страница поста: тоже запоминаем выбор</h3>
+      <p>Если пост открыли по ссылке <code>/posts/2</code>, тоже кладём его в store:</p>
+      <div class="code"><div class="code-head"><span class="file">src/pages/PostPage/PostPage.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import { Button, Typography } from '@mui/material';
+import { posts } from '../../data/posts';
+import { useAppDispatch } from '../../store/hooks';
+import { selectPost } from '../../store/selectedPostSlice';
+
+export const PostPage = () =&gt; {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+
+  const post = posts.find((p) =&gt; p.id === Number(id));
+
+  // открыли пост по ссылке — тоже запоминаем его как выбранный
+  useEffect(() =&gt; {
+    if (post) {
+      dispatch(selectPost(post));
+    }
+  }, [post, dispatch]);
+
+  if (!post) {
+    return &lt;Typography&gt;Пост не найден&lt;/Typography&gt;;
+  }
+
+  return (
+    &lt;&gt;
+      &lt;Button onClick={() =&gt; navigate(-1)}&gt;← Назад&lt;/Button&gt;
+      &lt;Typography variant="h4" gutterBottom&gt;
+        {post.title}
+      &lt;/Typography&gt;
+      &lt;Typography&gt;{post.text}&lt;/Typography&gt;
+    &lt;/&gt;
+  );
+};</code></pre></div>
+      <p><code>dispatch</code> вызываем в <code>useEffect</code>, а не прямо в теле компонента: менять store во время отрисовки нельзя.</p>
+    </section>
+
+    <section id="x-check">
+      <div class="step-head"><span class="step-num">5.9</span><h2>Проверяем</h2></div>
+      <ol class="rules">
+        <li><code>npm run dev</code>, открываем <code>/posts</code>.</li>
+        <li>Кликаем по посту: он подсвечивается, внизу появляется карточка, в шапке — чип «Выбран: …».</li>
+        <li>Переходим на «О проекте»: чип в шапке <b>остался</b>.</li>
+        <li>Возвращаемся на «Посты»: пост <b>всё ещё выбран</b>. С <code>useState</code> выбор бы потерялся.</li>
+        <li>Нажимаем крестик на чипе: выбор сбросился везде сразу.</li>
+      </ol>
+      <div class="note"><span class="note-label">Redux DevTools</span><p>Поставьте расширение <b>Redux DevTools</b> для Chrome или Firefox. <code>configureStore</code> подключает его сам. Во вкладке Redux видно каждый action, его <code>payload</code> и state до и после. Это главный инструмент отладки.</p></div>
+      <div class="note warn"><span class="note-label">После F5 store пустой</span><p>Store живёт в памяти вкладки. Чтобы данные переживали перезагрузку, их сохраняют в <code>localStorage</code> — это отдельная тема.</p></div>
+    </section>
+
+    <section id="x-structure">
+      <div class="step-head"><span class="step-num">5.10</span><h2>Итоговая структура</h2></div>
+      <div class="code"><div class="code-head"><span class="file">Структура src/</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">src/
+├── components/
+│   ├── Header/
+│   │   ├── Header.tsx
+│   │   ├── SelectedPostChip.tsx   # читает store
+│   │   └── ThemeToggle.tsx
+│   ├── Layout/
+│   └── SelectedPost/
+│       └── SelectedPost.tsx       # читает store
+├── data/
+│   └── posts.ts
+├── pages/
+├── store/
+│   ├── hooks.ts                   # useAppDispatch, useAppSelector
+│   ├── selectedPostSlice.ts       # state + reducers + actions + селектор
+│   └── store.ts                   # configureStore + типы
+├── App.tsx
+└── main.tsx                       # &lt;Provider store={store}&gt;</code></pre></div>
+      <h3>Новые данные в Redux за 4 шага</h3>
+      <ol class="rules">
+        <li>Создать слайс <code>src/store/имяSlice.ts</code> через <code>createSlice</code>.</li>
+        <li>Добавить его reducer в <code>configureStore</code> в <code>store.ts</code>.</li>
+        <li>Читать в компоненте: <code>useAppSelector(селектор)</code>.</li>
+        <li>Менять: <code>dispatch(action(данные))</code>.</li>
+      </ol>
+    </section>
+
+    <section id="x-mistakes">
+      <div class="step-head"><span class="step-num">5.11</span><h2>Частые ошибки</h2></div>
+      <ul class="mistakes">
+        <li><b>Забыли <code>&lt;Provider store={store}&gt;</code></b>Ошибка <code>could not find react-redux context value</code>. <code>Provider</code> должен оборачивать всё приложение.</li>
+        <li><b>Меняем state вне reducer</b><code>selectedPost.title = 'x'</code> в компоненте — так нельзя. Менять данные можно только через <code>dispatch</code>.</li>
+        <li><b>Забыли <code>dispatch</code></b>Просто <code>selectPost(post)</code> ничего не сделает. Функция только создаёт action, отправляет его <code>dispatch</code>.</li>
+        <li><b>Забыли добавить reducer в <code>store.ts</code></b><code>state.selectedPost</code> будет <code>undefined</code>.</li>
+        <li><b>В reducer и меняем state, и делаем <code>return</code></b>Выбирайте одно: либо <code>state.post = ...</code>, либо <code>return { ...новый state }</code>.</li>
+        <li><b>Кладём в Redux всё подряд</b>Открыта ли модалка, что введено в поле — это <code>useState</code>. В Redux только то, что нужно нескольким частям приложения.</li>
+        <li><b><code>useSelector</code> / <code>useDispatch</code> без типов</b>TypeScript не подскажет поля. Берите <code>useAppSelector</code> / <code>useAppDispatch</code> из <code>store/hooks.ts</code>.</li>
+      </ul>
+    </section>
   </main>
 
-  <footer>Проверено на сборке: Vite 8, React 19, TypeScript, MUI 9, sass-embedded. Ноябрь 2026.</footer>
+  <footer>Проверено на сборке: Vite 8, React 19, TypeScript, MUI 9, sass-embedded, Redux Toolkit 2, react-redux 9. Ноябрь 2026.</footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>

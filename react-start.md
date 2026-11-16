@@ -1379,3 +1379,453 @@ src/
 - **`useNavigate` или `Link` вне `BrowserRouter`** — ошибка в консоли. `BrowserRouter` должен оборачивать всё приложение.
 - **Сравниваем `id` из `useParams` с числом** — параметр всегда строка: `Number(id)`.
 - **Сайт на хостинге показывает 404 при обновлении `/posts`** — сервер не знает про маршруты React. На хостинге нужно настроить, чтобы все адреса отдавали `index.html`. В `npm run dev` всё работает само.
+
+---
+
+# Глава 5. Redux: общее состояние приложения
+
+## 5.1. Зачем нужен Redux
+
+Пока данные нужны одному компоненту, хватает `useState`. Проблемы начинаются, когда одни и те же данные нужны **разным частям приложения**.
+
+Пример из нашего блога: пользователь выбрал пост в списке. Этот выбор хотим видеть:
+
+- в списке постов — подсветить выбранный;
+- в шапке сайта — «Выбран: Первый пост»;
+- в отдельной карточке под списком.
+
+С `useState` здесь две проблемы:
+
+1. **Prop drilling («проброс пропсов»)** — `Header` и `PostsPage` не родственники. Чтобы они видели одно значение, `useState` придётся поднять в `App` и передавать вниз через несколько компонентов, которым эти данные вообще не нужны.
+2. **Состояние пропадает** — `useState` живёт, пока живёт компонент. Ушли со страницы `/posts` на `/about` — `PostsPage` размонтировался, выбор потерян.
+
+**Redux** — это одно общее хранилище (**store**) для всего приложения. Оно живёт вне компонентов, поэтому:
+
+- любой компонент может **прочитать** данные из store напрямую, без пропсов;
+- любой компонент может **изменить** данные, и все, кто их читает, перерисуются;
+- данные **не теряются** при переходе между страницами.
+
+Используем **Redux Toolkit** (RTK) — официальный современный способ писать на Redux. Старый «чистый» Redux с `switch` и `ACTION_TYPES` в новых проектах не пишут.
+
+| Инструмент   | Когда использовать                                                          |
+| ------------ | --------------------------------------------------------------------------- |
+| `useState`   | данные нужны одному компоненту (и, может, его детям): открыто ли меню, текст в поле |
+| `useContext` | редко меняющиеся данные для всего дерева: тема, язык, «залогинен ли»        |
+| **Redux**    | данные нужны многим компонентам в разных местах и часто меняются: выбранный пост, корзина, фильтры, пользователь |
+
+> **Не всё подряд в Redux.** Открыта ли модалка, что введено в поле — это локальное состояние, ему место в `useState`.
+
+---
+
+## 5.2. Главные понятия
+
+| Понятие      | Что это                                                             | Пример                                    |
+| ------------ | ------------------------------------------------------------------- | ----------------------------------------- |
+| **store**    | хранилище: один большой объект со всем состоянием приложения        | `{ selectedPost: { post: null } }`        |
+| **slice**    | «кусок» store про одну тему + функции, которые его меняют           | `selectedPostSlice`                       |
+| **action**   | объект-событие «что случилось»: `type` + данные `payload`           | `{ type: 'selectedPost/selectPost', payload: post }` |
+| **reducer**  | функция, которая по action меняет state                             | `selectPost: (state, action) => { ... }`  |
+| **dispatch** | «отправить» action в store                                          | `dispatch(selectPost(post))`              |
+| **selector** | функция, которая достаёт нужное из store                            | `(state) => state.selectedPost.post`      |
+
+### Как ходят данные
+
+1. **Клик** — пользователь нажал на пост.
+2. **dispatch** — компонент вызывает `dispatch(selectPost(post))`.
+3. **reducer** — Redux находит нужный reducer, тот записывает пост в state.
+4. **store** — в store лежит новый state.
+5. **useSelector** — все компоненты, которые читают выбранный пост, перерисовываются.
+
+Данные всегда идут **по кругу в одну сторону**. Компонент не меняет store напрямую — только отправляет action.
+
+---
+
+## 5.3. Устанавливаем
+
+```bash
+npm install @reduxjs/toolkit react-redux
+```
+
+- `@reduxjs/toolkit` — сам Redux и удобные функции: `createSlice`, `configureStore`;
+- `react-redux` — связь с React: `Provider`, `useSelector`, `useDispatch`.
+
+Всё, что связано с Redux, кладём в папку `src/store/`.
+
+---
+
+## 5.4. Создаём slice
+
+Slice описывает один кусок состояния: как он выглядит, с чего начинается и как меняется.
+
+`src/store/selectedPostSlice.ts`
+
+```ts
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { Post } from '../data/posts';
+import type { RootState } from './store';
+
+// 1. Как выглядит этот кусок состояния
+type SelectedPostState = {
+  post: Post | null;
+};
+
+// 2. Значение при старте приложения: ничего не выбрано
+const initialState: SelectedPostState = {
+  post: null,
+};
+
+// 3. Слайс = состояние + функции, которые его меняют
+export const selectedPostSlice = createSlice({
+  name: 'selectedPost',
+  initialState,
+  reducers: {
+    // action.payload — то, что передали при вызове: selectPost(post)
+    selectPost: (state, action: PayloadAction<Post>) => {
+      state.post = action.payload;
+    },
+    clearSelectedPost: (state) => {
+      state.post = null;
+    },
+  },
+});
+
+// 4. Action creators — их вызываем в компонентах через dispatch
+export const { selectPost, clearSelectedPost } = selectedPostSlice.actions;
+
+// 5. Селектор — функция, которая достаёт нужное из store
+export const selectSelectedPost = (state: RootState) => state.selectedPost.post;
+
+// 6. Reducer — подключаем в store
+export default selectedPostSlice.reducer;
+```
+
+- `name` — префикс для action: `selectPost` превратится в `{ type: 'selectedPost/selectPost' }`.
+- `reducers` — по одной функции на каждое действие. `createSlice` сам создаёт из них **action creators**: `selectPost(post)` вернёт готовый объект `{ type, payload }`.
+- `PayloadAction<Post>` — говорим TypeScript, что в `payload` лежит пост.
+
+> **Почему можно писать `state.post = ...`?** В React state менять напрямую нельзя. Redux Toolkit внутри использует библиотеку **Immer**: мы пишем как будто меняем объект, а Immer сам создаёт новую копию. Так можно **только внутри `createSlice`**.
+
+---
+
+## 5.5. Создаём store
+
+`src/store/store.ts`
+
+```ts
+import { configureStore } from '@reduxjs/toolkit';
+import selectedPostReducer from './selectedPostSlice';
+
+export const store = configureStore({
+  reducer: {
+    // ключ selectedPost — так этот кусок будет называться в state
+    selectedPost: selectedPostReducer,
+  },
+});
+
+// Типы для TypeScript: TS сам выводит их из store
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
+```
+
+Store собирается из слайсов. Появится новый слайс (например, корзина) — добавим строку `cart: cartReducer`, и в state появится `state.cart`.
+
+---
+
+## 5.6. Хуки с типами
+
+Обычные `useSelector` и `useDispatch` не знают, как устроен наш store. Делаем их версии с типами один раз и дальше используем только их:
+
+`src/store/hooks.ts`
+
+```ts
+import { useDispatch, useSelector } from 'react-redux';
+import type { AppDispatch, RootState } from './store';
+
+// Те же useDispatch и useSelector, но уже знают типы нашего store
+export const useAppDispatch = useDispatch.withTypes<AppDispatch>();
+export const useAppSelector = useSelector.withTypes<RootState>();
+```
+
+Теперь VS Code подсказывает поля state: пишем `state.` — видим `selectedPost`.
+
+---
+
+## 5.7. Подключаем store
+
+Оборачиваем приложение в `Provider` — как `BrowserRouter` и `ThemeProvider`. Теперь store доступен в любом компоненте:
+
+`src/main.tsx`
+
+```tsx
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router';
+import { Provider } from 'react-redux';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { theme } from './theme/theme';
+import { store } from './store/store';
+import App from './App';
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <Provider store={store}>
+      <BrowserRouter>
+        <ThemeProvider theme={theme} defaultMode="system">
+          <CssBaseline />
+          <App />
+        </ThemeProvider>
+      </BrowserRouter>
+    </Provider>
+  </StrictMode>,
+);
+```
+
+---
+
+## 5.8. Практика: храним выбранный пост
+
+Задача: клик по посту в списке **выбирает** его. Выбранный пост:
+
+- подсвечивается в списке;
+- показывается в карточке под списком;
+- виден в шапке на любой странице;
+- не теряется при переходе на другую страницу.
+
+### Список постов: записываем в store
+
+`src/pages/PostsPage/PostsPage.tsx`
+
+```tsx
+import { Link } from 'react-router';
+import {
+  Button,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Typography,
+} from '@mui/material';
+import { posts } from '../../data/posts';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { selectPost, selectSelectedPost } from '../../store/selectedPostSlice';
+import { SelectedPost } from '../../components/SelectedPost/SelectedPost';
+
+export const PostsPage = () => {
+  const dispatch = useAppDispatch();
+  // читаем из store: какой пост сейчас выбран
+  const selectedPost = useAppSelector(selectSelectedPost);
+
+  return (
+    <>
+      <Typography variant="h4" gutterBottom>
+        Посты
+      </Typography>
+
+      <List>
+        {posts.map((post) => (
+          <ListItem
+            key={post.id}
+            disablePadding
+            secondaryAction={
+              <Button component={Link} to={`/posts/${post.id}`} size="small">
+                Читать
+              </Button>
+            }
+          >
+            <ListItemButton
+              // подсвечиваем выбранный пост
+              selected={selectedPost?.id === post.id}
+              // кладём пост в store
+              onClick={() => dispatch(selectPost(post))}
+            >
+              <ListItemText primary={post.title} />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+
+      <SelectedPost />
+    </>
+  );
+};
+```
+
+- `useAppDispatch()` — получаем функцию `dispatch`.
+- `dispatch(selectPost(post))` — отправляем action «выбрали этот пост».
+- `useAppSelector(selectSelectedPost)` — читаем выбранный пост. Когда он изменится, компонент перерисуется сам.
+
+### Карточка выбранного поста: читаем из store
+
+Обратите внимание: `SelectedPost` **не получает пропсов**. Он сам берёт пост из store.
+
+`src/components/SelectedPost/SelectedPost.tsx`
+
+```tsx
+import { Button, Paper, Typography } from '@mui/material';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { clearSelectedPost, selectSelectedPost } from '../../store/selectedPostSlice';
+
+export const SelectedPost = () => {
+  const dispatch = useAppDispatch();
+  const post = useAppSelector(selectSelectedPost);
+
+  if (!post) {
+    return <Typography color="text.secondary">Выберите пост из списка</Typography>;
+  }
+
+  return (
+    <Paper variant="outlined" sx={{ p: 2 }}>
+      <Typography variant="overline">Выбранный пост</Typography>
+      <Typography variant="h5" gutterBottom>
+        {post.title}
+      </Typography>
+      <Typography sx={{ mb: 2 }}>{post.text}</Typography>
+      <Button onClick={() => dispatch(clearSelectedPost())}>Сбросить выбор</Button>
+    </Paper>
+  );
+};
+```
+
+### Шапка: тот же пост в другом конце приложения
+
+`Header` и `PostsPage` никак не связаны пропсами, но видят одни и те же данные:
+
+`src/components/Header/SelectedPostChip.tsx`
+
+```tsx
+import { Chip } from '@mui/material';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { clearSelectedPost, selectSelectedPost } from '../../store/selectedPostSlice';
+
+export const SelectedPostChip = () => {
+  const dispatch = useAppDispatch();
+  const post = useAppSelector(selectSelectedPost);
+
+  if (!post) return null;
+
+  return (
+    <Chip
+      label={`Выбран: ${post.title}`}
+      color="primary"
+      variant="outlined"
+      // крестик на чипе сбрасывает выбор
+      onDelete={() => dispatch(clearSelectedPost())}
+    />
+  );
+};
+```
+
+В `Header.tsx` добавляем чип рядом с кнопкой темы:
+
+```tsx
+import { SelectedPostChip } from './SelectedPostChip';
+
+// ...внутри <Toolbar>, перед <ThemeToggle />
+<SelectedPostChip />
+<ThemeToggle />
+```
+
+### Страница поста: тоже запоминаем выбор
+
+Если пост открыли по ссылке `/posts/2`, тоже кладём его в store:
+
+`src/pages/PostPage/PostPage.tsx`
+
+```tsx
+import { useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import { Button, Typography } from '@mui/material';
+import { posts } from '../../data/posts';
+import { useAppDispatch } from '../../store/hooks';
+import { selectPost } from '../../store/selectedPostSlice';
+
+export const PostPage = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+
+  const post = posts.find((p) => p.id === Number(id));
+
+  // открыли пост по ссылке — тоже запоминаем его как выбранный
+  useEffect(() => {
+    if (post) {
+      dispatch(selectPost(post));
+    }
+  }, [post, dispatch]);
+
+  if (!post) {
+    return <Typography>Пост не найден</Typography>;
+  }
+
+  return (
+    <>
+      <Button onClick={() => navigate(-1)}>← Назад</Button>
+      <Typography variant="h4" gutterBottom>
+        {post.title}
+      </Typography>
+      <Typography>{post.text}</Typography>
+    </>
+  );
+};
+```
+
+`dispatch` вызываем в `useEffect`, а не прямо в теле компонента: менять store во время отрисовки нельзя.
+
+---
+
+## 5.9. Проверяем
+
+1. `npm run dev`, открываем `/posts`.
+2. Кликаем по посту — он подсвечивается, внизу появляется карточка, в шапке — чип «Выбран: …».
+3. Переходим на «О проекте» — чип в шапке **остался**.
+4. Возвращаемся на «Посты» — пост **всё ещё выбран**. С `useState` выбор бы потерялся.
+5. Нажимаем крестик на чипе — выбор сбросился везде сразу.
+
+> **Redux DevTools.** Поставьте расширение **Redux DevTools** для Chrome или Firefox. `configureStore` подключает его сам. Во вкладке Redux видно каждый action, его `payload` и state до и после. Это главный инструмент отладки.
+
+> **После перезагрузки страницы (F5) store пустой.** Store живёт в памяти вкладки. Чтобы данные переживали перезагрузку, их сохраняют в `localStorage` — это отдельная тема.
+
+---
+
+## 5.10. Итоговая структура
+
+```
+src/
+├── components/
+│   ├── Header/
+│   │   ├── Header.tsx
+│   │   ├── SelectedPostChip.tsx   # читает store
+│   │   └── ThemeToggle.tsx
+│   ├── Layout/
+│   └── SelectedPost/
+│       └── SelectedPost.tsx       # читает store
+├── data/
+│   └── posts.ts
+├── pages/
+├── store/
+│   ├── hooks.ts                   # useAppDispatch, useAppSelector
+│   ├── selectedPostSlice.ts       # state + reducers + actions + селектор
+│   └── store.ts                   # configureStore + типы
+├── App.tsx
+└── main.tsx                       # <Provider store={store}>
+```
+
+Новые данные в Redux = **4 шага**:
+
+1. Создать слайс `src/store/имяSlice.ts` через `createSlice`.
+2. Добавить его reducer в `configureStore` в `store.ts`.
+3. Читать в компоненте: `useAppSelector(селектор)`.
+4. Менять: `dispatch(action(данные))`.
+
+---
+
+## 5.11. Частые ошибки
+
+- **Забыли `<Provider store={store}>`** — ошибка `could not find react-redux context value`. `Provider` должен оборачивать всё приложение.
+- **Меняем state вне reducer**: `selectedPost.title = 'x'` в компоненте — так нельзя. Менять данные можно только через `dispatch`.
+- **Забыли `dispatch`**: просто `selectPost(post)` — ничего не произойдёт. Функция только создаёт action, отправляет его `dispatch`.
+- **Забыли добавить reducer в `store.ts`** — `state.selectedPost` будет `undefined`.
+- **В reducer и меняем state, и делаем `return`** — выбирайте одно: либо `state.post = ...`, либо `return { ...новый state }`.
+- **Кладём в Redux всё подряд** — открыта ли модалка, что введено в поле — это `useState`. В Redux только то, что нужно нескольким частям приложения.
+- **Используем `useSelector` / `useDispatch` без типов** — TypeScript не подскажет поля. Берите `useAppSelector` / `useAppDispatch` из `store/hooks.ts`.
