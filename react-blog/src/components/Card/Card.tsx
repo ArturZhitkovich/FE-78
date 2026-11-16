@@ -1,6 +1,6 @@
 import { Typography } from "@mui/material"
 import styles from './Card.module.scss';
-import {  useCallback, useState } from "react";
+import {  useCallback } from "react";
 import type { Post } from "../../types/post";
 import { Link } from "react-router";
 import { PATHS } from "../../paths";

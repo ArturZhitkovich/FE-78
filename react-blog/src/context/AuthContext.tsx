@@ -41,24 +41,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return () => controller.abort();
   }, [])
 
-  // useEffect(() => {
-  //   const handleStorageChange = (event: StorageEvent) => {
-  //     console.log('event', event)
-
-  //     if( event.key === 'isAuth') {
-  //       setIsAuth(event.newValue === 'true');
-  //     }
-  //   } 
-
-  //   window.addEventListener('storage', handleStorageChange);
-
-  //   // ОБЯЗАТЕЛЬНО очищаем слушатель при размонтировании компонента
-  //   return () => {
-  //     window.removeEventListener('storage', handleStorageChange);
-  //   }
-  // }, []) 
-
-
   const login = () => setIsAuth(true);
   const logout = () => setIsAuth(false);
   const toogleAuth = () => setIsAuth(prev => !prev);
