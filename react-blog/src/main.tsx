@@ -18,11 +18,7 @@ createRoot(document.getElementById('root')!).render(
           <ThemeProvider theme={theme} defaultMode="system">
             <CssBaseline />
             <App />
-
-
             <CardModal />
-
-            
           </ThemeProvider>
         </AuthProvider>
       </BrowserRouter>

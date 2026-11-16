@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { MOCK_POSTS } from "../../mocks";
 import type { Post } from "../../types/post";
 import { Card } from "../../components/Card/Card";
+import { useAppDispatch } from "../../store/hooks";
+import { loadedPosts } from "../../store/postsSlice";
 
 const getPosts = (): Promise<Post[]> => {
   return new Promise((resolve) => {
@@ -15,7 +17,8 @@ const getPosts = (): Promise<Post[]> => {
 export const HomePage = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [posts, setPosts] = useState<Post[]>([])
-
+  const dispatch = useAppDispatch();
+  
   const firstPost = posts[0] ?? null
   const mediumPosts = posts.slice(1,5)
   const smallPosts = posts.slice(5)
@@ -24,6 +27,7 @@ export const HomePage = () => {
     getPosts()
       .then((fetched) => {
         setPosts(fetched)
+        dispatch(loadedPosts(fetched))
       })
       .catch(() => {
         console.error('error')
@@ -37,10 +41,17 @@ export const HomePage = () => {
    <>
 
     {isLoading ? <Skeleton height={300} width={600} /> : (
-      <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-        {firstPost && <Card key={firstPost.id} postData={firstPost} />}
-        {mediumPosts.map((post) => <Card key={post.id} postData={post} variant='medium' />)}
-        {smallPosts.map((post) => <Card key={post.id} postData={post} variant='small' />)}
+      <Box  sx={{display: 'flex', flexDirection: 'row', justifyContent: 'space-Between'}}>
+        <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+          {firstPost && <Card key={firstPost.id} postData={firstPost} />}
+          {mediumPosts.map((post) => <Card key={post.id} postData={post} variant='medium' />)}
+          {smallPosts.map((post) => <Card key={post.id} postData={post} variant='small' />)}
+        </Box>
+        <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+          {firstPost && <Card key={firstPost.id} postData={firstPost} />}
+          {mediumPosts.map((post) => <Card key={post.id} postData={post} variant='medium' />)}
+          {smallPosts.map((post) => <Card key={post.id} postData={post} variant='small' />)}
+        </Box>
       </Box>
     )}
 

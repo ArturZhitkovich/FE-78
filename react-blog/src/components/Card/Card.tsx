@@ -43,7 +43,7 @@ export const Card = (props: CardProps) => {
         </div>
       </div>
 
-      <CardFooter onShow={showModal} />
+      <CardFooter onShow={showModal} post={postData} />
     </div>
   )
 }

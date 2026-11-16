@@ -1,38 +1,40 @@
 import { Box, Button } from "@mui/material"
-import { useState, useEffect, useCallback } from "react";
+import { useCallback } from "react";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { dislikePostById, likePostById, selectCountDisLikesOfPost, selectCountLikesOfPost } from "../../store/postsSlice";
+import type { Post } from "../../types/post";
 
 interface CardFooterProps {
+  post: Post,
   onShow: () => void
 }
 
-const useLikePost = () => {
- const [likes, setLikes] = useState<number>(0);
-
-  useEffect(() => {
-    document.title = `Счётчик: ${likes}`;
-  }, [likes]);
+const useLikePost = (postId: number) => {
+  const dispatch = useAppDispatch();
+  const likes = useAppSelector(selectCountLikesOfPost(postId));
 
   const increment = useCallback(() => {
-    setLikes(likes + 1)
-  }, [])
+    dispatch(likePostById(postId));
+  }, [dispatch, postId])
 
   return [likes, increment] as [number, () => void]
 }
 
-const useDislikePost = (): [number, () => void] => {
-  const [dislikes, setDislikes] = useState<number>(0)
+const useDislikePost = (postId: number): [number, () => void] => {
+  const dispatch = useAppDispatch();
+  const dislikes = useAppSelector(selectCountDisLikesOfPost(postId));
 
-  const decrement = useCallback(() => {
-    setDislikes(prev => prev + 1)
-  }, [])
+  const increment = useCallback(() => {
+    dispatch(dislikePostById(postId));
+  }, [dispatch, postId])
 
-  return [dislikes, decrement]
+  return [dislikes, increment] as [number, () => void]
 }
 
 // statefull 
-const CardFooter = ({ onShow }: CardFooterProps) => {
-  const [likes, increment] = useLikePost()
-  const [dislikes, decrement] = useDislikePost()
+const CardFooter = ({ post, onShow }: CardFooterProps) => {
+  const [likes, increment] = useLikePost(post.id)
+  const [dislikes, decrement] = useDislikePost(post.id)
 
   return (
     <Box sx={{'display': 'flex', justifyContent:'space-between'}}>
