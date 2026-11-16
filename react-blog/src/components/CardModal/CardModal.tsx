@@ -3,8 +3,7 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardMedia from '@mui/material/CardMedia';
 import Typography from '@mui/material/Typography';
-import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { clearSelectedPost } from "../../store/selectedPostSlice";
+import { useClearSelectedPost, useSelectedPost } from "../../store/selectedPostSlice";
 
 const style = {
   position: 'absolute',
@@ -19,12 +18,8 @@ const style = {
 };
 
 const CardModal = () => {
-  const dispatch = useAppDispatch();
-  const post = useAppSelector((state) => state.selectedPost.post)
-
-  const onClose = () => {
-    dispatch(clearSelectedPost())
-  }
+  const post = useSelectedPost()
+  const onClose = useClearSelectedPost()
 
   if (!post) {
     return null

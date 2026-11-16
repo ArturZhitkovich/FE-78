@@ -1,12 +1,10 @@
 import { Typography } from "@mui/material"
 import styles from './Card.module.scss';
-import {  useCallback } from "react";
 import type { Post } from "../../types/post";
 import { Link } from "react-router";
 import { PATHS } from "../../paths";
 import CardFooter from "./CardFooter";
-import { useAppDispatch } from "../../store/hooks";
-import { selectPost } from "../../store/selectedPostSlice";
+import { useSelectPost } from "../../store/selectedPostSlice";
 
 export type VariantCard = 'large' | 'medium' | 'small' | 'search';
 
@@ -19,11 +17,7 @@ interface CardProps {
 export const Card = (props: CardProps) => {
   const { postData, variant = 'large' } = props;
 
-  const dispatch = useAppDispatch()
-
-  const onShow = useCallback(() => {
-    dispatch(selectPost(postData))
-  }, [dispatch, postData])
+  const showModal = useSelectPost(postData);
 
   const titleSize = {
     large: 'h3',
@@ -49,7 +43,7 @@ export const Card = (props: CardProps) => {
         </div>
       </div>
 
-      <CardFooter onShow={onShow} />
+      <CardFooter onShow={showModal} />
     </div>
   )
 }
