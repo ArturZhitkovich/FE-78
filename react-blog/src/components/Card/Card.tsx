@@ -8,6 +8,8 @@ import { useSelectPost } from "../../store/selectedPostSlice";
 
 export type VariantCard = 'large' | 'medium' | 'small' | 'search';
 
+const random = () => Math.round(Math.random() * 20)
+
 interface CardProps {
   postData: Post,
   variant?: VariantCard,
@@ -39,7 +41,7 @@ export const Card = (props: CardProps) => {
         </div>
 
         <div className={styles.cardImage} >
-          <img src={postData.image} />
+          <img src={`https://static.photos/640x360/${random()}`} />
         </div>
       </div>
 

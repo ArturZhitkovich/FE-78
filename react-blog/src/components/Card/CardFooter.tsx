@@ -3,6 +3,7 @@ import { useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { dislikePostById, likePostById, selectCountDisLikesOfPost, selectCountLikesOfPost } from "../../store/postsSlice";
 import type { Post } from "../../types/post";
+import { DeleteButton } from "./DeleteButton";
 
 interface CardFooterProps {
   post: Post,
@@ -12,7 +13,7 @@ interface CardFooterProps {
 const useLikePost = (postId: number) => {
   const dispatch = useAppDispatch();
   const likes = useAppSelector(selectCountLikesOfPost(postId));
-
+  debugger
   const increment = useCallback(() => {
     dispatch(likePostById(postId));
   }, [dispatch, postId])
@@ -45,6 +46,7 @@ const CardFooter = ({ post, onShow }: CardFooterProps) => {
       <div>
         <Button>saved</Button>
         <Button onClick={onShow}>show</Button>
+        <DeleteButton postId={post.id} />
       </div>
     </Box>
   )

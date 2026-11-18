@@ -1,33 +1,10 @@
 import { Skeleton, Box } from "@mui/material";
-import { useState, useEffect } from "react";
-import { MOCK_POSTS } from "../../mocks";
-import type { Post } from "../../types/post";
 import { Card } from "../../components/Card/Card";
-
-const getPosts = (): Promise<Post[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(MOCK_POSTS)
-    }, 30);
-  })
-}
+import { useGetPostsQuery } from "../../store/api/postsApi";
 
 export const PostsPage = () => {
-  const [isLoading, setIsLoading] = useState<boolean>(true)
-  const [posts, setPosts] = useState<Post[]>([])
-
-  useEffect(() => {
-    getPosts()
-      .then((fetched) => {
-        setPosts(fetched)
-      })
-      .catch(() => {
-        console.error('error')
-      })
-      .finally(() => {
-        setIsLoading(false)
-      })
-  }, [])
+  const { data, isLoading } = useGetPostsQuery({ limit: 11, offset: 20 });
+  const posts = data?.results ?? [];
 
   return (
    <>

@@ -1,54 +1,50 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit"
-import type { Post } from "../types/post"
 import type { RootState } from "./store"
 
+type Reactions = { likes: number; dislikes: number };
+
 type PostsState = {
-  posts: Post[]
+  // лайки по id поста: { 12: { likes: 3, dislikes: 0 } }
+  reactions: Record<number, Reactions>;
 }
 
 const initialState: PostsState = {
-  posts: []
+  reactions: {}
 }
 
 export const postsSlice = createSlice({
   name: 'fetchedPosts',
   initialState,
   reducers: {
-    loadedPosts: (state, action: PayloadAction<Post[]>) => {
-       state.posts = action.payload;
-    },
     likePostById: (state, action: PayloadAction<number>) => {
-      const post = state.posts.find(p => p.id === action.payload);
-
-      if (post) {
-        post.likes = post.likes + 1
-      }
+      const id = action.payload;
+      
+      state.reactions[id] ??= { likes: 0, dislikes: 0 };
+      state.reactions[id].likes += 1;
     },
     dislikePostById: (state, action: PayloadAction<number>) => {
-      const post = state.posts.find(p => p.id === action.payload);
-
-      if (post) {
-        post.dislikes = post.dislikes + 1
-      }
+      const id = action.payload;
+      
+      state.reactions[id] ??= { likes: 0, dislikes: 0 };
+      state.reactions[id].dislikes += 1;
     }
   }
 })
 
 // 4. Action creators — их вызываем в компонентах через dispatch
-export const { loadedPosts, likePostById, dislikePostById } = postsSlice.actions;
+export const { likePostById, dislikePostById } = postsSlice.actions;
 
 // // 5. Селектор — функция, которая достаёт нужное из store
 export const selectCountLikesOfPost = (id: number) => (state: RootState) => {
-  const foundedPost = state.fetchedPosts.posts.find((post) => post.id === id) ?? null
+  const foundedPost = state.fetchedPosts.reactions[id]
 
   return foundedPost?.likes ?? 0
 }
 
 export const selectCountDisLikesOfPost = (id: number) => (state: RootState) => {
-  const foundedPost = state.fetchedPosts.posts.find((post) => post.id === id) ?? null
+  const foundedPost = state.fetchedPosts.reactions[id]
 
   return foundedPost?.dislikes ?? 0
 }
-
 
 export default postsSlice.reducer;

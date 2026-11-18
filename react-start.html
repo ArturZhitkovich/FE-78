@@ -510,7 +510,11 @@ footer { grid-column: 1 / -1; color: var(--muted); font-size: 13px; border-top: 
   </header>
 
   <nav class="toc" aria-label="Оглавление">
-    <p>Глава 1 · Проект</p>
+    <p>Перед началом</p>
+    <ol>
+      <li><a href="#git-sync"><span>⇣</span>Обновления из main</a></li>
+    </ol>
+    <p class="toc-group">Глава 1 · Проект</p>
     <ol>
       <li><a href="#prepare"><span>0</span>Что установить</a></li>
       <li><a href="#create"><span>1</span>Создаём проект</a></li>
@@ -572,9 +576,53 @@ footer { grid-column: 1 / -1; color: var(--muted); font-size: 13px; border-top: 
       <li><a href="#x-structure"><span>5.10</span>Структура</a></li>
       <li><a href="#x-mistakes"><span>5.11</span>Частые ошибки</a></li>
     </ol>
+    <p class="toc-group">Глава 6 · RTK Query</p>
+    <ol>
+      <li><a href="#q-why"><span>6.1</span>Зачем RTK Query</a></li>
+      <li><a href="#q-swagger"><span>6.2</span>Сервер и Swagger</a></li>
+      <li><a href="#q-terms"><span>6.3</span>Понятия</a></li>
+      <li><a href="#q-base"><span>6.4</span>Базовый API</a></li>
+      <li><a href="#q-store"><span>6.5</span>Подключаем к store</a></li>
+      <li><a href="#q-manual"><span>6.6</span>API руками</a></li>
+      <li><a href="#q-usage"><span>6.7</span>В компонентах</a></li>
+      <li><a href="#q-likes"><span>6.8</span>Лайки в slice</a></li>
+      <li><a href="#q-codegen"><span>6.9</span>Автогенерация</a></li>
+      <li><a href="#q-auth"><span>6.10</span>Логин и токен</a></li>
+      <li><a href="#q-check"><span>6.11</span>Проверяем</a></li>
+      <li><a href="#q-structure"><span>6.12</span>Структура</a></li>
+      <li><a href="#q-mistakes"><span>6.13</span>Частые ошибки</a></li>
+    </ol>
   </nav>
 
   <main>
+    <section id="git-sync">
+      <div class="step-head"><span class="step-num">⇣</span><h2>Памятка: как забрать новые материалы из main</h2></div>
+      <p>Преподаватель добавляет новые файлы в ветку <code>main</code>. Вы работаете в своей ветке, например <code>Ivan-Ivanov-main</code>. Чтобы получить новые файлы к себе, нужно влить <code>main</code> в свою ветку.</p>
+      <p><b>Один раз</b> (если своей ветки ещё нет):</p>
+      <div class="code"><div class="code-head"><span class="file">Терминал</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-bash">git clone https://github.com/ArturZhitkovich/FE-78.git
+cd FE-78
+git checkout -b Ivan-Ivanov-main
+git push -u origin Ivan-Ivanov-main</code></pre></div>
+      <p><b>Каждый раз, когда вышли новые материалы:</b></p>
+      <div class="code"><div class="code-head"><span class="file">Терминал</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-bash"># 1. Сохраняем свою работу
+git add .
+git commit -m "моя работа"
+
+# 2. Обновляем main
+git checkout main
+git pull origin main
+
+# 3. Возвращаемся в свою ветку и вливаем в неё main
+git checkout Ivan-Ivanov-main
+git merge main
+
+# 4. Отправляем на GitHub
+git push</code></pre></div>
+      <div class="note"><span class="note-label">Подсказка</span><p>Проверить, в какой вы ветке: <code>git branch</code> (текущая отмечена <code>*</code>).</p></div>
+      <div class="note warn"><span class="note-label">Если CONFLICT</span><p>Значит, вы и преподаватель поменяли один и тот же файл. Откройте файл в VS Code, выберите нужный вариант (Accept Current / Incoming / Both), затем <code>git add .</code> и <code>git commit</code>.</p></div>
+      <div class="note warn"><span class="note-label">Важно</span><p>В ветке <code>main</code> ничего не меняйте и не коммитьте — она только для получения обновлений.</p></div>
+    </section>
+
     <section id="prepare">
       <div class="step-head"><span class="step-num">0</span><h2>Что должно быть установлено</h2></div>
       <ul>
@@ -2154,9 +2202,687 @@ export const PostPage = () =&gt; {
         <li><b><code>useSelector</code> / <code>useDispatch</code> без типов</b>TypeScript не подскажет поля. Берите <code>useAppSelector</code> / <code>useAppDispatch</code> из <code>store/hooks.ts</code>.</li>
       </ul>
     </section>
+
+    <header class="chapter" id="ch6">
+      <p class="eyebrow">Глава 6</p>
+      <h2 class="chapter-title">RTK Query: запросы к серверу</h2>
+      <p>Запросы к серверу без <code>useEffect</code>: загрузка, ошибки и кэш из коробки. Подключаем наш бэкенд и генерируем API по Swagger.</p>
+    </header>
+    <section id="q-why">
+      <div class="step-head"><span class="step-num">6.1</span><h2>Зачем нужен RTK Query</h2></div>
+      <p>Посмотрите, как сейчас грузятся посты в нашем блоге. В <code>HomePage</code>, <code>PostsPage</code> и <code>PostPage</code> повторяется одно и то же:</p>
+      <div class="code"><div class="code-head"><span class="file">Сейчас: HomePage, PostsPage, PostPage</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">const [isLoading, setIsLoading] = useState&lt;boolean&gt;(true);
+const [posts, setPosts] = useState&lt;Post[]&gt;([]);
+
+useEffect(() =&gt; {
+  getPosts()
+    .then((fetched) =&gt; {
+      setPosts(fetched);
+      dispatch(loadedPosts(fetched)); // и ещё копия в Redux
+    })
+    .catch(() =&gt; console.error('error'))
+    .finally(() =&gt; setIsLoading(false));
+}, []);</code></pre></div>
+      <p>Что здесь плохо:</p>
+      <ol class="rules">
+        <li><b>Один и тот же код в трёх местах.</b> <code>useState</code> для данных, <code>useState</code> для загрузки, <code>useEffect</code>, <code>then / catch / finally</code>. Нужна ошибка — пишем ещё один <code>useState</code>.</li>
+        <li><b>Нет кэша.</b> Ушли с главной на «О проекте» и вернулись — посты грузятся заново, снова скелетон.</li>
+        <li><b>Данные дублируются.</b> Посты лежат и в <code>useState</code> страницы, и в <code>postsSlice</code>. Легко получить две разные версии.</li>
+        <li><b>После изменения данных список устаревает.</b> Создали или удалили пост — список сам не узнает, его надо перезапросить руками.</li>
+      </ol>
+      <p><b>RTK Query</b> — часть Redux Toolkit для работы с сервером. Мы один раз описываем запросы, а он сам:</p>
+      <ul>
+        <li>делает запрос и отдаёт <code>data</code>, <code>isLoading</code>, <code>isError</code>;</li>
+        <li><b>кэширует</b> ответ: вернулись на страницу — данные показываются сразу;</li>
+        <li><b>не делает лишних запросов</b>: если два компонента просят одно и то же, запрос уйдёт один;</li>
+        <li><b>перезапрашивает</b> список после создания или удаления поста;</li>
+        <li>кладёт всё в Redux store, так что в Redux DevTools видно каждый запрос.</li>
+      </ul>
+      <p>Было и станет:</p>
+      <div class="code"><div class="code-head"><span class="file">Было → стало</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">// было: ~15 строк в каждой странице
+const [isLoading, setIsLoading] = useState(true);
+const [posts, setPosts] = useState&lt;Post[]&gt;([]);
+useEffect(() =&gt; { /* ... */ }, []);
+
+// стало: одна строка
+const { data, isLoading, isError } = useGetPostsQuery({ limit: 11 });</code></pre></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Что храним</th><th>Где</th><th>Пример</th></tr></thead>
+        <tbody>
+          <tr><td>Данные с сервера</td><td><b>RTK Query</b></td><td>список постов, один пост, профиль</td></tr>
+          <tr><td>Общее состояние клиента</td><td>обычный slice (<code>createSlice</code>)</td><td>выбранный пост, лайки, корзина</td></tr>
+          <tr><td>Локальное состояние</td><td><code>useState</code></td><td>текст в поле поиска, открыта ли модалка</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note"><span class="note-label">Подсказка</span><p>RTK Query ставить отдельно не нужно — он уже внутри <code>@reduxjs/toolkit</code>.</p></div>
+    </section>
+    <section id="q-swagger">
+      <div class="step-head"><span class="step-num">6.2</span><h2>Наш сервер и Swagger</h2></div>
+      <p>Бэкенд блога: <code>https://studapi.teachmeskills.by</code></p>
+      <p>Документация: <b><a href="https://studapi.teachmeskills.by/api/schema/swagger-ui/" target="_blank" rel="noopener">Swagger</a></b>. Это страница, где описаны все адреса API: какие параметры принимают и что возвращают. Каждый запрос там можно выполнить кнопкой <b>Try it out</b>.</p>
+      <p>Нам нужны:</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Метод</th><th>Адрес</th><th>Что делает</th><th>Нужен токен</th></tr></thead>
+        <tbody>
+          <tr><td><code>GET</code></td><td><code>/blog/posts/</code></td><td>список постов</td><td>нет</td></tr>
+          <tr><td><code>GET</code></td><td><code>/blog/posts/{id}/</code></td><td>один пост</td><td>нет</td></tr>
+          <tr><td><code>POST</code></td><td><code>/blog/posts/</code></td><td>создать пост (с картинкой)</td><td>да</td></tr>
+          <tr><td><code>DELETE</code></td><td><code>/blog/posts/{id}/</code></td><td>удалить пост</td><td>да</td></tr>
+          <tr><td><code>GET</code></td><td><code>/blog/posts/my_posts/</code></td><td>мои посты</td><td>да</td></tr>
+          <tr><td><code>POST</code></td><td><code>/auth/jwt/create/</code></td><td>логин: email + пароль → токены</td><td>нет</td></tr>
+        </tbody>
+      </table></div>
+      <p>Список постов приходит не массивом, а объектом <b>с пагинацией</b>:</p>
+      <div class="code"><div class="code-head"><span class="file">Ответ GET /blog/posts/</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-json">{
+  "count": 1418,
+  "next": "http://studapi.teachmeskills.by/blog/posts/?limit=2&amp;offset=2",
+  "previous": null,
+  "results": [
+    { "id": 1, "image": "https://...", "text": "...", "date": "2021-10-06",
+      "lesson_num": 123, "title": "...", "description": "...", "author": 7 }
+  ]
+}</code></pre></div>
+      <p>Параметры списка: <code>limit</code> (сколько постов), <code>offset</code> (сколько пропустить), <code>search</code> (поиск), <code>ordering</code> (сортировка, например <code>-date</code>).</p>
+      <div class="note"><span class="note-label">Подсказка</span><p>Лайков и дизлайков на сервере <b>нет</b>. Они останутся у нас в обычном slice (см. 6.8).</p></div>
+    </section>
+    <section id="q-terms">
+      <div class="step-head"><span class="step-num">6.3</span><h2>Главные понятия</h2></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Понятие</th><th>Что это</th></tr></thead>
+        <tbody>
+          <tr><td><code>createApi</code></td><td>создаёт «API-слой»: базовый адрес + список запросов</td></tr>
+          <tr><td><code>fetchBaseQuery</code></td><td>обёртка над <code>fetch</code>: подставляет <code>baseUrl</code>, заголовки, разбирает JSON</td></tr>
+          <tr><td><b>endpoint</b></td><td>один запрос к серверу: «получить посты», «удалить пост»</td></tr>
+          <tr><td><b>query</b></td><td>запрос на <b>чтение</b> (<code>GET</code>). Хук <code>useXxxQuery</code> запускается сам</td></tr>
+          <tr><td><b>mutation</b></td><td>запрос на <b>изменение</b> (<code>POST</code>, <code>PUT</code>, <code>PATCH</code>, <code>DELETE</code>). Хук <code>useXxxMutation</code> даёт функцию, которую вызываем по клику</td></tr>
+          <tr><td><b>tag</b></td><td>ярлык в кэше. Query говорит «я даю <code>Post</code>» (<code>providesTags</code>), mutation — «я испортил <code>Post</code>» (<code>invalidatesTags</code>). Все query с этим тегом перезапросятся</td></tr>
+          <tr><td><code>injectEndpoints</code></td><td>добавить эндпоинты в уже созданный API из другого файла</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+    <section id="q-base">
+      <div class="step-head"><span class="step-num">6.4</span><h2>Базовый API</h2></div>
+      <p>Один <code>createApi</code> на весь проект. В нём только общее: адрес сервера и заголовки. Сами запросы добавим в отдельных файлах — так делает и автогенерация (6.9).</p>
+      <div class="code"><div class="code-head"><span class="file">src/store/api/baseApi.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+
+export const baseApi = createApi({
+  // ключ, под которым кэш RTK Query лежит в store: state.api
+  reducerPath: 'api',
+
+  // как делать запросы: обёртка над fetch с общим адресом сервера
+  baseQuery: fetchBaseQuery({
+    baseUrl: 'https://studapi.teachmeskills.by',
+    // перед каждым запросом: если есть токен, добавляем заголовок
+    prepareHeaders: (headers) =&gt; {
+      const token = localStorage.getItem('access');
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+      return headers;
+    },
+  }),
+
+  // «ярлыки» для кэша: по ним RTK Query понимает, что пора перезапросить
+  tagTypes: ['Post'],
+
+  // эндпоинты добавим в отдельных файлах через injectEndpoints
+  endpoints: () =&gt; ({}),
+});</code></pre></div>
+      <div class="note"><span class="note-label">Подсказка</span><p>Импорт именно из <code>@reduxjs/toolkit/query/react</code> — только эта версия создаёт React-хуки.</p></div>
+    </section>
+    <section id="q-store">
+      <div class="step-head"><span class="step-num">6.5</span><h2>Подключаем к store</h2></div>
+      <p>У RTK Query свой reducer (там лежит кэш) и свой middleware (он отправляет запросы). Добавляем оба:</p>
+      <div class="code"><div class="code-head"><span class="file">src/store/store.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">import { configureStore } from '@reduxjs/toolkit';
+import { createLogger } from 'redux-logger';
+import selectedPostReducer from './selectedPostSlice';
+import postsReducer from './postsSlice';
+import { baseApi } from './api/baseApi';
+
+const logger = createLogger();
+
+export const store = configureStore({
+  reducer: {
+    selectedPost: selectedPostReducer,
+    fetchedPosts: postsReducer,
+    // кэш запросов: state.api
+    [baseApi.reducerPath]: baseApi.reducer,
+  },
+  middleware: (getDefaultMiddleware) =&gt;
+    // middleware RTK Query: отправляет запросы, чистит старый кэш
+    getDefaultMiddleware().concat(baseApi.middleware, logger),
+});
+
+export type RootState = ReturnType&lt;typeof store.getState&gt;;
+export type AppDispatch = typeof store.dispatch;</code></pre></div>
+      <p><code>main.tsx</code> не меняется: <code>&lt;Provider store={store}&gt;</code> уже есть.</p>
+    </section>
+    <section id="q-manual">
+      <div class="step-head"><span class="step-num">6.6</span><h2>Пишем API руками</h2></div>
+      <p>Сначала обновим тип поста под сервер. <code>likes</code> и <code>dislikes</code> убираем — их сервер не присылает:</p>
+      <div class="code"><div class="code-head"><span class="file">src/types/post.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">// Пост — ровно то, что присылает сервер (схема Post в Swagger)
+export interface Post {
+  id: number;
+  image: string;
+  text: string;
+  date?: string; // "2026-11-09"
+  lesson_num: number;
+  title: string;
+  description: string;
+  author: number;
+}
+
+// Ответ сервера со списком: посты + данные для пагинации
+export interface PostsResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Post[];
+}
+
+// Что можно передать в GET /blog/posts/
+export interface GetPostsParams {
+  limit?: number;
+  offset?: number;
+  search?: string;
+  ordering?: string;
+}</code></pre></div>
+      <p>Теперь сами запросы. Каждый эндпоинт — это <code>build.query</code> или <code>build.mutation</code> с двумя типами: <b>что приходит</b> и <b>что передаём</b>.</p>
+      <div class="code"><div class="code-head"><span class="file">src/store/api/postsApi.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">import { baseApi } from './baseApi';
+import type { GetPostsParams, Post, PostsResponse } from '../../types/post';
+
+export const postsApi = baseApi.injectEndpoints({
+  endpoints: (build) =&gt; ({
+    // GET /blog/posts/?limit=..&amp;offset=..&amp;search=..
+    // build.query&lt;ЧтоПриходит, ЧтоПередаём&gt;
+    getPosts: build.query&lt;PostsResponse, GetPostsParams&gt;({
+      query: (params) =&gt; ({ url: '/blog/posts/', params }),
+      providesTags: ['Post'],
+    }),
+
+    // GET /blog/posts/5/
+    getPostById: build.query&lt;Post, number&gt;({
+      query: (id) =&gt; `/blog/posts/${id}/`,
+      providesTags: (_result, _error, id) =&gt; [{ type: 'Post', id }],
+    }),
+
+    // POST /blog/posts/ — картинку отправляем файлом, поэтому FormData
+    createPost: build.mutation&lt;Post, FormData&gt;({
+      query: (formData) =&gt; ({ url: '/blog/posts/', method: 'POST', body: formData }),
+      invalidatesTags: ['Post'],
+    }),
+
+    // DELETE /blog/posts/5/
+    deletePost: build.mutation&lt;void, number&gt;({
+      query: (id) =&gt; ({ url: `/blog/posts/${id}/`, method: 'DELETE' }),
+      invalidatesTags: ['Post'],
+    }),
+  }),
+});
+
+// Хуки RTK Query создал сам: use + ИмяЭндпоинта + Query/Mutation
+export const {
+  useGetPostsQuery,
+  useGetPostByIdQuery,
+  useCreatePostMutation,
+  useDeletePostMutation,
+} = postsApi;</code></pre></div>
+      <ul>
+        <li><code>query</code> возвращает либо строку-адрес, либо объект <code>{ url, method, body, params }</code>.</li>
+        <li><code>params</code> превращается в query string: <code>{ limit: 11, search: 'react' }</code> → <code>?limit=11&amp;search=react</code>.</li>
+        <li><code>providesTags: ['Post']</code> — «этот ответ про посты». <code>invalidatesTags: ['Post']</code> — «посты изменились, перезапросите всё, что их даёт».</li>
+        <li>Имя хука собирается из имени эндпоинта: <code>getPosts</code> → <code>useGetPostsQuery</code>, <code>deletePost</code> → <code>useDeletePostMutation</code>.</li>
+      </ul>
+    </section>
+    <section id="q-usage">
+      <div class="step-head"><span class="step-num">6.7</span><h2>Используем в компонентах</h2></div>
+      <h3>Главная: список постов</h3>
+      <div class="code"><div class="code-head"><span class="file">src/pages/HomePage/HomePage.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { Alert, Box, Skeleton } from '@mui/material';
+import { Card } from '../../components/Card/Card';
+import { useGetPostsQuery } from '../../store/api/postsApi';
+
+export const HomePage = () =&gt; {
+  // один хук вместо useState + useEffect + then/catch/finally
+  const { data, isLoading, isError } = useGetPostsQuery({ limit: 11 });
+
+  if (isLoading) {
+    return &lt;Skeleton height={300} width={600} /&gt;;
+  }
+
+  if (isError || !data) {
+    return &lt;Alert severity="error"&gt;Не удалось загрузить посты&lt;/Alert&gt;;
+  }
+
+  const posts = data.results;
+  const firstPost = posts[0] ?? null;
+  const mediumPosts = posts.slice(1, 5);
+  const smallPosts = posts.slice(5);
+
+  return (
+    &lt;Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}&gt;
+      {firstPost &amp;&amp; &lt;Card postData={firstPost} /&gt;}
+      {mediumPosts.map((post) =&gt; &lt;Card key={post.id} postData={post} variant="medium" /&gt;)}
+      {smallPosts.map((post) =&gt; &lt;Card key={post.id} postData={post} variant="small" /&gt;)}
+    &lt;/Box&gt;
+  );
+};</code></pre></div>
+      <p>Что возвращает query-хук:</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Поле</th><th>Что значит</th></tr></thead>
+        <tbody>
+          <tr><td><code>data</code></td><td>ответ сервера (пока не пришёл — <code>undefined</code>)</td></tr>
+          <tr><td><code>isLoading</code></td><td><b>первая</b> загрузка, данных ещё нет — показываем скелетон</td></tr>
+          <tr><td><code>isFetching</code></td><td>идёт <b>любой</b> запрос, в том числе повторный (данные уже есть, но обновляются)</td></tr>
+          <tr><td><code>isError</code></td><td>запрос упал</td></tr>
+          <tr><td><code>error</code></td><td>сама ошибка: <code>{ status: 404, data: ... }</code></td></tr>
+          <tr><td><code>refetch</code></td><td>функция «запросить заново»</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Страница постов: поиск</h3>
+      <p>Аргумент хука изменился — RTK Query сам делает новый запрос. <code>useEffect</code> с зависимостями писать не нужно:</p>
+      <div class="code"><div class="code-head"><span class="file">src/pages/PostsPage/PostsPage.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { useState } from 'react';
+import { Alert, Box, Skeleton, TextField } from '@mui/material';
+import { Card } from '../../components/Card/Card';
+import { useGetPostsQuery } from '../../store/api/postsApi';
+
+export const PostsPage = () =&gt; {
+  const [search, setSearch] = useState('');
+
+  // поменялся search — RTK Query сам сделает новый запрос
+  const { data, isFetching, isError } = useGetPostsQuery({ limit: 20, search });
+
+  return (
+    &lt;Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}&gt;
+      &lt;TextField
+        label="Поиск"
+        value={search}
+        onChange={(e) =&gt; setSearch(e.target.value)}
+      /&gt;
+
+      {isError &amp;&amp; &lt;Alert severity="error"&gt;Не удалось загрузить посты&lt;/Alert&gt;}
+      {isFetching &amp;&amp; &lt;Skeleton height={300} width={600} /&gt;}
+
+      {data?.results.map((post) =&gt; (
+        &lt;Card key={post.id} postData={post} variant="search" /&gt;
+      ))}
+    &lt;/Box&gt;
+  );
+};</code></pre></div>
+      <div class="note"><span class="note-label">Подсказка</span><p>Каждый новый <code>search</code> — отдельная запись в кэше. Напечатали «react», стёрли, напечатали снова — второй раз ответ возьмётся из кэша.</p></div>
+      <h3>Страница поста</h3>
+      <div class="code"><div class="code-head"><span class="file">src/pages/PostPage/PostPage.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { useParams } from 'react-router';
+import { Alert, Box, Skeleton } from '@mui/material';
+import { Card } from '../../components/Card/Card';
+import { useGetPostByIdQuery } from '../../store/api/postsApi';
+
+export const PostPage = () =&gt; {
+  const { id } = useParams();
+
+  const { data: post, isLoading, isError } = useGetPostByIdQuery(Number(id));
+
+  if (isLoading) return &lt;Skeleton height={300} width={600} /&gt;;
+  if (isError || !post) return &lt;Alert severity="error"&gt;Пост не найден&lt;/Alert&gt;;
+
+  return (
+    &lt;Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}&gt;
+      &lt;Card postData={post} variant="search" /&gt;
+    &lt;/Box&gt;
+  );
+};</code></pre></div>
+      <h3>Mutation: удаляем пост</h3>
+      <p>Mutation <b>не запускается сама</b>. Хук возвращает массив: функцию-запуск и состояние запроса.</p>
+      <div class="code"><div class="code-head"><span class="file">src/components/DeletePostButton/DeletePostButton.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { Button } from '@mui/material';
+import { useDeletePostMutation } from '../../store/api/postsApi';
+
+export const DeletePostButton = ({ id }: { id: number }) =&gt; {
+  // [функция-запуск, { состояние запроса }]
+  const [deletePost, { isLoading }] = useDeletePostMutation();
+
+  const handleDelete = async () =&gt; {
+    try {
+      await deletePost(id).unwrap();
+      // список постов обновится сам: deletePost сбросил тег 'Post'
+    } catch {
+      alert('Не получилось удалить пост');
+    }
+  };
+
+  return (
+    &lt;Button color="error" onClick={handleDelete} disabled={isLoading}&gt;
+      Удалить
+    &lt;/Button&gt;
+  );
+};</code></pre></div>
+      <ul>
+        <li><code>.unwrap()</code> — превращает результат в обычный Promise: успех → данные, ошибка → <code>catch</code>. Без <code>unwrap</code> ошибка не попадёт в <code>catch</code>.</li>
+        <li>После удаления <code>invalidatesTags: ['Post']</code> помечает кэш постов устаревшим, и <code>useGetPostsQuery</code> на главной перезапросится сам.</li>
+      </ul>
+      <div class="note"><span class="note-label">Подсказка</span><p>Создавать и удалять посты можно только с токеном (см. 6.10). Без него сервер ответит <code>401</code>.</p></div>
+      <p>Создание поста — так же, только данные собираем в <code>FormData</code> (в посте есть файл-картинка):</p>
+      <div class="code"><div class="code-head"><span class="file">Создание поста</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">const [createPost, { isLoading }] = useCreatePostMutation();
+
+const handleSubmit = async (image: File) =&gt; {
+  const formData = new FormData();
+  formData.append('title', 'Мой пост');
+  formData.append('text', '...');        // минимум 200 символов
+  formData.append('description', '...'); // минимум 50 символов
+  formData.append('lesson_num', '6');
+  formData.append('image', image);
+
+  await createPost(formData).unwrap();
+};</code></pre></div>
+    </section>
+    <section id="q-likes">
+      <div class="step-head"><span class="step-num">6.8</span><h2>Лайки остаются в slice</h2></div>
+      <p>Лайков на сервере нет, поэтому это <b>клиентское</b> состояние — ему место в обычном slice. А вот сами посты из <code>postsSlice</code> убираем: теперь их хранит RTK Query, и <code>loadedPosts</code> больше не нужен.</p>
+      <p>Храним лайки по <code>id</code> поста. Названия action и селекторов оставляем прежними — <code>CardFooter</code> менять не придётся:</p>
+      <div class="code"><div class="code-head"><span class="file">src/store/postsSlice.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { RootState } from './store';
+
+type Reactions = { likes: number; dislikes: number };
+
+type PostsState = {
+  // лайки по id поста: { 12: { likes: 3, dislikes: 0 } }
+  reactions: Record&lt;number, Reactions&gt;;
+};
+
+const initialState: PostsState = {
+  reactions: {},
+};
+
+export const postsSlice = createSlice({
+  name: 'fetchedPosts',
+  initialState,
+  reducers: {
+    likePostById: (state, action: PayloadAction&lt;number&gt;) =&gt; {
+      const id = action.payload;
+      state.reactions[id] ??= { likes: 0, dislikes: 0 };
+      state.reactions[id].likes += 1;
+    },
+    dislikePostById: (state, action: PayloadAction&lt;number&gt;) =&gt; {
+      const id = action.payload;
+      state.reactions[id] ??= { likes: 0, dislikes: 0 };
+      state.reactions[id].dislikes += 1;
+    },
+  },
+});
+
+export const { likePostById, dislikePostById } = postsSlice.actions;
+
+export const selectCountLikesOfPost = (id: number) =&gt; (state: RootState) =&gt;
+  state.fetchedPosts.reactions[id]?.likes ?? 0;
+
+export const selectCountDisLikesOfPost = (id: number) =&gt; (state: RootState) =&gt;
+  state.fetchedPosts.reactions[id]?.dislikes ?? 0;
+
+export default postsSlice.reducer;</code></pre></div>
+      <p>Папку <code>src/mocks/</code> можно удалить — данные теперь приходят с сервера.</p>
+      <div class="note warn"><span class="note-label">Правило</span><p>Данные с сервера не копируем в свой slice через <code>dispatch(loadedPosts(...))</code>. Источник правды один — кэш RTK Query. Нужны посты в другом компоненте — просто вызываем там тот же хук: запрос не повторится, данные возьмутся из кэша.</p></div>
+    </section>
+    <section id="q-codegen">
+      <div class="step-head"><span class="step-num">6.9</span><h2>Автогенерация API из Swagger</h2></div>
+      <p>Писать эндпоинты и типы руками долго, и легко ошибиться: опечатка в адресе, забыли поле в типе, на сервере поменяли ответ. Swagger уже <b>знает</b> все адреса и типы — пусть код по нему напишет генератор.</p>
+      <p>Swagger-страница строится по файлу-схеме (<b>OpenAPI</b>). Её JSON лежит тут: <code>https://studapi.teachmeskills.by/api/schema/?format=json</code>. Генератор <code>@rtk-query/codegen-openapi</code> читает схему и создаёт файл с эндпоинтами, типами и хуками.</p>
+      <h3>Устанавливаем</h3>
+      <div class="code"><div class="code-head"><span class="file">Терминал</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-bash">npm install -D @rtk-query/codegen-openapi esbuild-runner</code></pre></div>
+      <ul>
+        <li><code>@rtk-query/codegen-openapi</code> — сам генератор;</li>
+        <li><code>esbuild-runner</code> — нужен, чтобы генератор смог прочитать конфиг на TypeScript (<code>.ts</code>). Без него будет ошибка <code>neither esbuild-runner nor ts-node are installed</code>.</li>
+      </ul>
+      <h3>Конфиг</h3>
+      <p>В корне проекта (рядом с <code>package.json</code>):</p>
+      <div class="code"><div class="code-head"><span class="file">openapi-config.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">import type { ConfigFile } from '@rtk-query/codegen-openapi';
+
+const config: ConfigFile = {
+  // откуда брать описание API (тот же JSON, по которому строится Swagger)
+  schemaFile: 'https://studapi.teachmeskills.by/api/schema/?format=json',
+
+  // наш пустой createApi, в который будут добавлены эндпоинты
+  apiFile: './src/store/api/baseApi.ts',
+  apiImport: 'baseApi',
+
+  // куда положить результат
+  outputFile: './src/store/api/blogApi.generated.ts',
+  exportName: 'blogApi',
+
+  // сгенерировать хуки useXxxQuery / useXxxMutation
+  hooks: true,
+  // проставить providesTags / invalidatesTags по разделам Swagger
+  tag: true,
+
+  // берём только нужное: посты, группы и логин
+  filterEndpoints: [/^blog/, /^authJwt/],
+};
+
+export default config;</code></pre></div>
+      <h3>Скрипт в <code>package.json</code></h3>
+      <div class="code"><div class="code-head"><span class="file">package.json</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-json">"scripts": {
+  "dev": "vite",
+  "build": "tsc -b &amp;&amp; vite build",
+  "lint": "eslint .",
+  "preview": "vite preview",
+  "api:generate": "rtk-query-codegen-openapi openapi-config.ts"
+}</code></pre></div>
+      <p>Запускаем:</p>
+      <div class="code"><div class="code-head"><span class="file">Терминал</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-bash">npm run api:generate</code></pre></div>
+      <p>В терминале: <code>Generating ./src/store/api/blogApi.generated.ts</code> → <code>Done</code>.</p>
+      <h3>Что получилось</h3>
+      <p>Имена берутся из <code>operationId</code> в схеме (их видно в Swagger, если раскрыть запрос):</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Запрос</th><th><code>operationId</code></th><th>Хук</th></tr></thead>
+        <tbody>
+          <tr><td><code>GET /blog/posts/</code></td><td><code>blog_posts_list</code></td><td><code>useBlogPostsListQuery</code></td></tr>
+          <tr><td><code>GET /blog/posts/{id}/</code></td><td><code>blog_posts_retrieve</code></td><td><code>useBlogPostsRetrieveQuery</code></td></tr>
+          <tr><td><code>POST /blog/posts/</code></td><td><code>blog_posts_create</code></td><td><code>useBlogPostsCreateMutation</code></td></tr>
+          <tr><td><code>PATCH /blog/posts/{id}/</code></td><td><code>blog_posts_partial_update</code></td><td><code>useBlogPostsPartialUpdateMutation</code></td></tr>
+          <tr><td><code>DELETE /blog/posts/{id}/</code></td><td><code>blog_posts_destroy</code></td><td><code>useBlogPostsDestroyMutation</code></td></tr>
+          <tr><td><code>GET /blog/posts/my_posts/</code></td><td><code>blog_posts_my_posts_list</code></td><td><code>useBlogPostsMyPostsListQuery</code></td></tr>
+          <tr><td><code>POST /auth/jwt/create/</code></td><td><code>auth_jwt_create_create</code></td><td><code>useAuthJwtCreateCreateMutation</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>Кусочек сгенерированного файла — это тот же <code>injectEndpoints</code>, что мы писали руками:</p>
+      <div class="code"><div class="code-head"><span class="file">src/store/api/blogApi.generated.ts (фрагмент)</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">import { baseApi as api } from './baseApi';
+export const addTagTypes = ['auth', 'blog'] as const;
+const injectedRtkApi = api
+  .enhanceEndpoints({ addTagTypes })
+  .injectEndpoints({
+    endpoints: (build) =&gt; ({
+      blogPostsList: build.query&lt;BlogPostsListApiResponse, BlogPostsListApiArg&gt;({
+        query: (queryArg) =&gt; ({
+          url: `/blog/posts/`,
+          params: {
+            author__course_group: queryArg.authorCourseGroup,
+            limit: queryArg.limit,
+            offset: queryArg.offset,
+            ordering: queryArg.ordering,
+            search: queryArg.search,
+          },
+        }),
+        providesTags: ['blog'],
+      }),
+      // ...
+    }),
+  });
+
+export type PostRead = {
+  id: number;
+  image: string;
+  text: string;
+  date?: string;
+  lesson_num: number;
+  title: string;
+  description: string;
+  author: number;
+};
+// ...
+export const { useBlogPostsListQuery, useBlogPostsRetrieveQuery /* ... */ } = injectedRtkApi;</code></pre></div>
+      <div class="note"><span class="note-label">Подсказка</span><p>Типы с суффиксом <code>Read</code> — то, что сервер <b>присылает</b> (есть <code>id</code>). Без суффикса — то, что мы <b>отправляем</b> (<code>id</code> нет, его выдаёт сервер).</p></div>
+      <h3>Переходим на сгенерированный код</h3>
+      <p><b>1. Типы.</b> Свои интерфейсы больше не пишем — берём сгенерированные. Остальные файлы проекта продолжают импортировать <code>Post</code> отсюда и ничего не замечают:</p>
+      <div class="code"><div class="code-head"><span class="file">src/types/post.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">// Типы теперь берём из сгенерированного файла — они всегда совпадают с сервером
+export type {
+  PostRead as Post,
+  PaginatedPostListRead as PostsResponse,
+} from '../store/api/blogApi.generated';</code></pre></div>
+      <p><b>2. Теги.</b> Генератор с <code>tag: true</code> использует теги по разделам Swagger: <code>'blog'</code> и <code>'auth'</code>. В <code>baseApi.ts</code> меняем <code>tagTypes</code>:</p>
+      <div class="code"><div class="code-head"><span class="file">src/store/api/baseApi.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">// теги 'blog' и 'auth' генератор добавит сам; 'blog' объявляем для своего createPost
+tagTypes: ['blog'],</code></pre></div>
+      <p><b>3. Хуки.</b> Меняем импорты в страницах. Главное отличие: у сгенерированных хуков аргумент <b>всегда объект</b>.</p>
+      <div class="code"><div class="code-head"><span class="file">src/pages/HomePage/HomePage.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { useBlogPostsListQuery } from '../../store/api/blogApi.generated';
+
+// ...
+const { data, isLoading, isError } = useBlogPostsListQuery({ limit: 11 });
+
+// в схеме results необязательный, поэтому ?? []
+const posts = data?.results ?? [];</code></pre></div>
+      <div class="code"><div class="code-head"><span class="file">src/pages/PostPage/PostPage.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { useBlogPostsRetrieveQuery } from '../../store/api/blogApi.generated';
+
+// ...
+// было: useGetPostByIdQuery(Number(id))
+const { data: post, isLoading, isError } = useBlogPostsRetrieveQuery({ id: Number(id) });</code></pre></div>
+      <p>Удаление: <code>useBlogPostsDestroyMutation()</code> и вызов <code>deletePost({ id }).unwrap()</code>.</p>
+      <p><b>4. Что генератор не умеет.</b> Создание поста отправляет <b>файл</b> (<code>multipart/form-data</code>). Сгенерированный <code>useBlogPostsCreateMutation</code> отправит объект как JSON, и картинка потеряется. Такой эндпоинт оставляем рукописным — ручной и сгенерированный код спокойно живут вместе в одном <code>baseApi</code>:</p>
+      <div class="code"><div class="code-head"><span class="file">src/store/api/postsApi.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">import { baseApi } from './baseApi';
+import type { Post } from '../../types/post';
+
+// Только то, что генератор не умеет: отправка файла через FormData
+export const postsApi = baseApi.injectEndpoints({
+  endpoints: (build) =&gt; ({
+    createPost: build.mutation&lt;Post, FormData&gt;({
+      query: (formData) =&gt; ({ url: '/blog/posts/', method: 'POST', body: formData }),
+      invalidatesTags: ['blog'],
+    }),
+  }),
+});
+
+export const { useCreatePostMutation } = postsApi;</code></pre></div>
+      <h3>Правила работы с генерацией</h3>
+      <ul>
+        <li><b><code>*.generated.ts</code> руками не правим.</b> Следующий <code>npm run api:generate</code> перезапишет все правки. Нужно что-то поменять — делаем это в своём файле через <code>injectEndpoints</code> или <code>enhanceEndpoints</code>.</li>
+        <li><b>Бэкенд поменялся — запускаем <code>npm run api:generate</code>.</b> Если поле переименовали, TypeScript сразу покажет все места, где оно используется.</li>
+        <li><b>Сгенерированный файл коммитим</b> в git — чтобы проект собирался без доступа к Swagger.</li>
+      </ul>
+    </section>
+    <section id="q-auth">
+      <div class="step-head"><span class="step-num">6.10</span><h2>Логин и токен</h2></div>
+      <p>Создавать, менять и удалять посты можно только авторизованным. Сервер использует <b>JWT</b>: отправляем email и пароль, получаем два токена:</p>
+      <ul>
+        <li><code>access</code> — пропуск, живёт недолго. Его отправляем в каждом запросе в заголовке <code>Authorization: Bearer &lt;access&gt;</code>;</li>
+        <li><code>refresh</code> — чтобы получить новый <code>access</code>, когда старый истечёт.</li>
+      </ul>
+      <p>Заголовок уже подставляет <code>prepareHeaders</code> в <code>baseApi.ts</code> (6.4) — осталось сохранить токен после логина:</p>
+      <div class="code"><div class="code-head"><span class="file">src/pages/LoginPage/LoginPage.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router';
+import { Alert, Box, Button, TextField } from '@mui/material';
+import { useAuthJwtCreateCreateMutation } from '../../store/api/blogApi.generated';
+import { useAuth } from '../../context/AuthContext';
+
+export const LoginPage = () =&gt; {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const navigate = useNavigate();
+  const { login } = useAuth();
+
+  const [createToken, { isLoading, isError }] = useAuthJwtCreateCreateMutation();
+
+  const handleSubmit = async (e: FormEvent) =&gt; {
+    e.preventDefault();
+    try {
+      // POST /auth/jwt/create/ → { access, refresh }
+      const tokens = await createToken({
+        tokenObtainPairRequest: { email, password },
+      }).unwrap();
+
+      localStorage.setItem('access', tokens.access);
+      localStorage.setItem('refresh', tokens.refresh);
+      login();
+      navigate('/posts');
+    } catch {
+      // ошибку покажет isError
+    }
+  };
+
+  return (
+    &lt;Box component="form" onSubmit={handleSubmit} sx={{ display: 'grid', gap: 2, maxWidth: 360 }}&gt;
+      &lt;TextField label="Email" value={email} onChange={(e) =&gt; setEmail(e.target.value)} /&gt;
+      &lt;TextField
+        label="Пароль"
+        type="password"
+        value={password}
+        onChange={(e) =&gt; setPassword(e.target.value)}
+      /&gt;
+      {isError &amp;&amp; &lt;Alert severity="error"&gt;Неверный email или пароль&lt;/Alert&gt;}
+      &lt;Button type="submit" variant="contained" disabled={isLoading}&gt;
+        Войти
+      &lt;/Button&gt;
+    &lt;/Box&gt;
+  );
+};</code></pre></div>
+      <p>Добавьте маршрут в <code>App.tsx</code>, например <code>&lt;Route path="/login" element={&lt;LoginPage /&gt;} /&gt;</code>.</p>
+      <div class="note"><span class="note-label">Подсказка</span><p>Аккаунт создаётся через <code>POST /auth/users/</code> и подтверждается письмом. <code>access</code>-токен живёт ограниченное время: когда сервер начнёт отвечать <code>401</code>, нужно получить новый через <code>/auth/jwt/refresh/</code> или просто войти заново. Автоматическое обновление токена — отдельная тема.</p></div>
+    </section>
+    <section id="q-check">
+      <div class="step-head"><span class="step-num">6.11</span><h2>Проверяем</h2></div>
+      <ol class="rules">
+        <li><code>npm run dev</code>, открываем главную. Во вкладке <b>Network</b> (F12) — запрос <code>posts/?limit=11</code>, на странице — посты с сервера.</li>
+        <li>Переходим на «О проекте» и обратно — <b>нового запроса нет</b>, посты появляются сразу: сработал кэш.</li>
+        <li>В <b>Redux DevTools</b> видно ветку <code>api</code> в state и actions вида <code>api/executeQuery/pending</code> → <code>api/executeQuery/fulfilled</code>.</li>
+        <li>На <code>/posts</code> печатаем в поиск — на каждое изменение уходит запрос с <code>?search=...</code>.</li>
+        <li>Ставим лайк — счётчик растёт, на сервер ничего не уходит (лайки в <code>postsSlice</code>).</li>
+        <li>Логинимся, удаляем свой пост — список перезапрашивается сам.</li>
+      </ol>
+      <div class="note"><span class="note-label">Подсказка</span><p><b>Кэш живёт 60 секунд</b> после того, как последний компонент перестал использовать данные. Потом запись удаляется, и следующий заход сделает запрос заново. Время меняется опцией <code>keepUnusedDataFor</code> в <code>createApi</code>.</p></div>
+    </section>
+    <section id="q-structure">
+      <div class="step-head"><span class="step-num">6.12</span><h2>Итоговая структура</h2></div>
+      <div class="code"><div class="code-head"><span class="file">Структура проекта</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">react-blog/
+├── openapi-config.ts              # настройки генератора
+├── package.json                   # "api:generate": "rtk-query-codegen-openapi openapi-config.ts"
+└── src/
+    ├── pages/
+    │   ├── HomePage/              # useBlogPostsListQuery
+    │   ├── PostsPage/             # useBlogPostsListQuery + поиск
+    │   ├── PostPage/              # useBlogPostsRetrieveQuery
+    │   └── LoginPage/             # useAuthJwtCreateCreateMutation
+    ├── store/
+    │   ├── api/
+    │   │   ├── baseApi.ts             # createApi: baseUrl, токен, tagTypes
+    │   │   ├── blogApi.generated.ts   # сгенерирован, руками не трогаем
+    │   │   └── postsApi.ts            # свои эндпоинты (createPost с FormData)
+    │   ├── hooks.ts
+    │   ├── postsSlice.ts          # только лайки
+    │   ├── selectedPostSlice.ts
+    │   └── store.ts               # + baseApi.reducer и baseApi.middleware
+    └── types/
+        └── post.ts                # реэкспорт PostRead as Post</code></pre></div>
+      <p>Новый запрос к серверу:</p>
+      <ol class="rules">
+        <li>Есть в Swagger → <code>npm run api:generate</code>, берём готовый хук из <code>blogApi.generated.ts</code>.</li>
+        <li>Нет или генератор не справился → пишем руками через <code>baseApi.injectEndpoints</code>.</li>
+        <li>Чтение — <code>useXxxQuery(аргументы)</code>, изменение — <code>const [mutate] = useXxxMutation()</code> и <code>mutate(...).unwrap()</code>.</li>
+        <li>Mutation должна сбрасывать (<code>invalidatesTags</code>) теги, которые дают (<code>providesTags</code>) нужные query.</li>
+      </ol>
+    </section>
+    <section id="q-mistakes">
+      <div class="step-head"><span class="step-num">6.13</span><h2>Частые ошибки</h2></div>
+      <ul class="mistakes">
+        <li><b>Забыли <code>baseApi.middleware</code> в store</b>В консоли предупреждение <code>Middleware for RTK-Query API at reducerPath "api" has not been added to the store</code>, запросы не работают как надо.</li>
+        <li><b>Забыли <code>[baseApi.reducerPath]: baseApi.reducer</code></b>В консоли ошибка <code>No data found at state.api. Did you forget to add the reducer to the store?</code>, данных нет.</li>
+        <li><b>Импорт из <code>@reduxjs/toolkit/query</code></b>Вместо <code>@reduxjs/toolkit/query/react</code> — хуков <code>useXxxQuery</code> не будет.</li>
+        <li><b>Вызываем хук в обработчике клика или в условии</b>Это хук, правила те же: только на верхнем уровне компонента. Для действий по клику — mutation.</li>
+        <li><b>Ждём, что mutation запустится сама</b>Нет, нужно вызвать функцию из массива: <code>const [deletePost] = useDeletePostMutation()</code> → <code>deletePost(id)</code>.</li>
+        <li><b><code>try / catch</code> без <code>.unwrap()</code></b>Ошибка не попадёт в <code>catch</code>, <code>await</code> вернёт <code>{ error }</code>.</li>
+        <li><b>Список не обновился после создания или удаления</b>Mutation не сбрасывает тот тег, который даёт query. Проверьте <code>providesTags</code> и <code>invalidatesTags</code>.</li>
+        <li><b>Копируем ответ в свой slice</b>Через <code>dispatch(loadedPosts(data))</code> — два источника правды. Данные с сервера берём только из хука.</li>
+        <li><b>Правим <code>blogApi.generated.ts</code> руками</b>Правки пропадут после следующей генерации.</li>
+        <li><b>Аргумент сгенерированного хука не объектом</b><code>useBlogPostsRetrieveQuery(5)</code> — нужно <code>useBlogPostsRetrieveQuery({ id: 5 })</code>.</li>
+        <li><b><code>401 Unauthorized</code></b>Нет токена или он истёк. Проверьте <code>localStorage.getItem('access')</code> и заголовок <code>Authorization</code> во вкладке Network.</li>
+        <li><b>Забыли слеш в конце адреса</b><code>/blog/posts</code> вместо <code>/blog/posts/</code> — сервер ответит редиректом <code>301</code>. <code>GET</code> переживёт это лишним запросом, а <code>POST</code> и <code>DELETE</code> сломаются.</li>
+      </ul>
+    </section>
   </main>
 
-  <footer>Проверено на сборке: Vite 8, React 19, TypeScript, MUI 9, sass-embedded, Redux Toolkit 2, react-redux 9. Ноябрь 2026.</footer>
+  <footer>Проверено на сборке: Vite 8, React 19, TypeScript, MUI 9, sass-embedded, Redux Toolkit 2 (RTK Query), react-redux 9, @rtk-query/codegen-openapi 2. Ноябрь 2026.</footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
@@ -2168,6 +2894,7 @@ export const PostPage = () =&gt; {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-scss.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
 <script>
 (function () {
   // Копирование кода
