@@ -1,6 +1,9 @@
 import { Bookmark, MoreHorizontal, ThumbsDown, ThumbsUp } from 'lucide-react';
 import styles from './PostCard.module.scss';
 import { useCallback, useState } from 'react';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { removeSavedPost, savePost, selectIsSavedPost } from '../../store/savedPostSlice';
+import type { Post } from '../../types';
 
 const useLikePost = () =>{
     const [countLike, setLike] = useState(0);
@@ -22,21 +25,38 @@ const useDislikePost = () => {
     return [countDislike, decrement] as [number, () => void];
 }
 
-const useSavePost = () =>{
-    const [saved, setSaved] = useState(false);
+// const useSavePost = () =>{
+//     const [saved, setSaved] = useState(false);
 
-    const toggleSave = useCallback(()=>{
-        setSaved(prev => !prev);
-    },[])
+//     const toggleSave = useCallback(()=>{
+//         setSaved(prev => !prev);
+//     },[])
 
-    return [saved, toggleSave] as [boolean, () => void];
+//     return [saved, toggleSave] as [boolean, () => void];
+// }
+
+type CardFooterProps = {
+    post: Post;
 }
 
 
-export const CardFooter = () =>{
+export const CardFooter = ({post}: CardFooterProps) =>{
     const [countLike, increment] = useLikePost();
     const [countDislike, decrement] = useDislikePost();
-    const [saved, toggleSave] = useSavePost();
+    // const [saved, toggleSave] = useSavePost();
+
+    const dispatch = useAppDispatch();
+  // читаем из store: какой пост сейчас выбран
+    const isSaved = useAppSelector(selectIsSavedPost(post.id));
+
+
+    const toggleSave = useCallback(() =>{
+        if(isSaved){
+            dispatch(removeSavedPost(post.id))
+        }else{
+            dispatch(savePost(post));
+        }
+    }, [post, dispatch, isSaved]);
         
     return(
         <div className={styles.footer}>
@@ -55,7 +75,7 @@ export const CardFooter = () =>{
 
                 <div className={styles.iconGroupRight}>
                     <button className={styles.iconBtn} onClick={toggleSave}>
-                        <Bookmark fill={saved ? 'black' : 'transparent'}/>
+                        <Bookmark fill={isSaved ? 'black' : 'transparent'}/>
                     </button>
                     <button className={styles.iconBtn}>
                         <MoreHorizontal />

@@ -38,7 +38,7 @@ export const MediumPost = ({ post, variant }: PostCardProps) => {
                 </div>
             </div>
             
-            <CardFooter />
+            <CardFooter post={post} />
         </div>
     )
 }

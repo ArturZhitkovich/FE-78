@@ -44,7 +44,7 @@ export const LargePost = ({ post, variant }: PostCardProps) => {
                 )}
             </div>
         
-            <CardFooter />
+            <CardFooter post={post} />
         </div>
     );
 }
