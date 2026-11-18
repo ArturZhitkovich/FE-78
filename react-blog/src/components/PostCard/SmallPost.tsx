@@ -1,7 +1,7 @@
-import { ThumbsUp, ThumbsDown, Bookmark, MoreHorizontal } from 'lucide-react';
-import { useState } from 'react';
 import type { PostCardProps } from './PostCard';
 import styles from './PostCard.module.scss';
+import { CardFooter } from './CardFooter';
+import { Link } from 'react-router';
 
 export const SmallPost = ({ post, variant }: PostCardProps) => {
     const { date, title, image } = post;
@@ -12,17 +12,6 @@ export const SmallPost = ({ post, variant }: PostCardProps) => {
         year: 'numeric',
     });
 
-    const [countLike, setLike] = useState(0);
-    const [countDislike, setDislike] = useState(0);
-     
-    const handleClickLike = () => {
-        setLike(countLike + 1);
-    }
-     
-    const handleClickDislike = () => {
-        setDislike(countDislike + 1);
-    }
-
     return (
 
         <div className={`${styles.card} ${styles[variant]}`}>
@@ -31,7 +20,9 @@ export const SmallPost = ({ post, variant }: PostCardProps) => {
                 <div className={styles.content}>
                     <span className={styles.dateLabel}>{formattedDate}</span> 
                     <h3 className={`${styles.title} ${styles[variant]}`}>
-                        {title}
+                        <Link to={`/posts/${post.id}`} className={styles.titleLink}>
+                            {post.title}
+                        </Link>
                     </h3>  
                 </div>
                 
@@ -44,26 +35,7 @@ export const SmallPost = ({ post, variant }: PostCardProps) => {
                 )}
             </div>
             
-            <div className={styles.footer}>
-                <div className={styles.iconGroupLeft}>
-
-                    <button className={styles.iconBtn} onClick={handleClickLike}>
-                        <ThumbsUp />
-                    </button>
-                    <span className={styles.countLike}>{countLike}</span>
-                    
-                    <button className={styles.iconBtn} onClick={handleClickDislike}>
-                        <ThumbsDown />
-                    </button>
-                    <span className={styles.countDislike}>{countDislike}</span>
-                    
-                </div>
-
-                <div className={styles.iconGroupRight}>
-                    <button className={styles.iconBtn}><Bookmark /></button>
-                    <button className={styles.iconBtn}><MoreHorizontal /></button>
-                </div>
-            </div>  
+            <CardFooter post={post} />
         </div>
     )
 }

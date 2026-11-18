@@ -1,6 +1,6 @@
 import type { Post } from "./types";
 
-export const posts: Post[] = [
+export const mockPosts: Post[] = [
   {
     id: 1,
     image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1000&auto=format&fit=crop',
@@ -12,7 +12,7 @@ export const posts: Post[] = [
   },
   {
     id: 2,
-    image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1000&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?q=80&w=1000&auto=format&fit=crop',
     text: 'Astronauts Kayla Barron and Raja Chari floated out of the International Space Station airlock for a spacewalk Tuesday.',
     date: '2021-04-20',
     lesson_num: 2,
@@ -21,7 +21,7 @@ export const posts: Post[] = [
   },
   {
     id: 3,
-    image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1000&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1610296669228-602fa827fc1f?q=80&w=1000&auto=format&fit=crop',
     text: 'Astronauts Kayla Barron and Raja Chari floated out of the International Space Station airlock for a spacewalk Tuesday.',
     date: '2021-04-20',
     lesson_num: 3,

@@ -1,40 +1,20 @@
-import type { ReactNode } from "react"
 import { Header } from "../Header/Header";
-import { Box, Container, Link} from "@mui/material";
-import { Title } from "../Title/Title";
+import { Box, Container} from "@mui/material";
 import styles from "./Layout.module.scss";
+import { Outlet } from "react-router";
 
-type LayoutProps = {
-    children: ReactNode;
-    showBackLink?: boolean;
-    title: string;
-}
+// type LayoutProps = {
+//     children: ReactNode;
+// }
 
-export const Layout = ({children, showBackLink, title} : LayoutProps) =>{
+export const Layout = () =>{
     return(
         <>
         <Box className={styles.wrapper}>
         <Header />
             <Box component="main" className={styles.main}>
                 <Container>
-                    <div className={styles.titleBlock}>
-
-                        {showBackLink && (
-                            <Link 
-                            href="/" 
-                            underline="none" 
-                            color="inherit" 
-                            className={styles.backLink}
-                            >
-                            Back to home
-                            </Link>
-                        )}
-
-                        <Title title={title} />
-
-                    </div>
-
-                    {children}
+                    <Outlet/>
                 </Container>
             </Box>
         </Box>
