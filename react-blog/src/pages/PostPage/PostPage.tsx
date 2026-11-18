@@ -1,12 +1,12 @@
 import { Skeleton, Box } from "@mui/material";
 import { Card } from "../../components/Card/Card";
 import { useParams } from "react-router";
-import { useGetPostByIdQuery } from "../../store/api/postsApi";
+import { useBlogPostsRetrieveQuery } from "../../store/api/blogApi.generated";
 
 
 export const PostPage = () => {
   const { id }  = useParams()
-  const {data: post, isLoading} = useGetPostByIdQuery(Number(id))   
+  const {data: post, isLoading} = useBlogPostsRetrieveQuery({ id: Number(id) })   
 
   return (
    <>

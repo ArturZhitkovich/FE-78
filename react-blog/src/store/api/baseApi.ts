@@ -14,6 +14,6 @@ export const baseApi = createApi({
     },
   }),
    // «ярлыки» для кэша: по ним RTK Query понимает, что пора перезапросить
-  tagTypes: ['Post'],
+  tagTypes: ['blog'],
   endpoints: () => ({})
 })

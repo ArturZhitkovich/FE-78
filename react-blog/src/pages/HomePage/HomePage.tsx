@@ -1,10 +1,10 @@
 import { Skeleton, Grid, Stack } from "@mui/material";
 import { Card } from "../../components/Card/Card";
-import { useGetPostsQuery } from "../../store/api/postsApi";
+import { useBlogGroupsListQuery } from "../../store/api/blogApi.generated";
 
 
 export const HomePage = () => {
-  const { data, isLoading } = useGetPostsQuery({ limit: 11, offset: 20 });
+  const { data, isLoading } = useBlogGroupsListQuery({ limit: 11, offset: 20 });
 
   const posts = data?.results ?? []
   const firstPost = posts[0] ?? null;
