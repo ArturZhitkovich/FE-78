@@ -1,0 +1,62 @@
+.card {
+  min-width: 100px;
+  max-width: 880px;
+  border-radius: 0;
+  padding: 12px;
+}
+.cardContent {
+  display: flex;
+  padding: 0;
+  gap: 20px;
+}
+.cardText {
+  width: 60%;
+}
+.cardWrapperImage {
+  width: 40%;
+}
+.cardImage {
+  width: 100%;
+  -o-object-fit: cover;
+     object-fit: cover;
+  background-position: center;
+}
+.cardLink {
+  text-decoration: none;
+  color: black;
+}
+.cardLink:hover {
+  text-decoration: underline;
+  color: #04223f;
+}
+.card_medium {
+  max-width: 440px;
+}
+.card_medium .cardContent {
+  display: flex;
+  flex-direction: column-reverse;
+}
+.card_medium .cardText {
+  width: 100%;
+}
+.card_medium .cardWrapperImage {
+  width: 100%;
+}
+.card_small {
+  max-width: 290px;
+}
+.card_search {
+  max-width: 60%;
+  margin: 0 auto;
+}
+.card_search .cardContent {
+  width: 100%;
+  display: flex;
+  flex-direction: column-reverse;
+}
+.card_search .cardTitle {
+  line-height: 45px;
+}
+.card_search .cardWrapperImage {
+  width: 100%;
+}/*# sourceMappingURL=CardItem.module.css.map */
