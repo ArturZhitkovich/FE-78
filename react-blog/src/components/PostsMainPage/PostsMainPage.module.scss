@@ -1,0 +1,65 @@
+/* Контейнер всей страницы */
+// .pageContainer {
+//   min-height: 100vh;
+//   background-color: #f8f9fa;
+//   /* padding: 2rem 1rem; */
+// }
+
+.pageTitle {
+  // font-size: 24px;
+  // font-weight: 600;
+  // text-align: left;
+  // // padding: 15px 24px;
+}
+
+.pageWrapper {
+  // max-width: 1200px;
+  // margin: 0 auto;
+}
+
+/* Главная двухколоночная сетка (Лента + Боковая панель) */
+.mainGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .mainGrid {
+    grid-template-columns: 3fr 1fr;
+  }
+}
+
+/* Левая новостная лента */
+.newsFeed {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+/* Сетки для средних карточек (2 в ряд) */
+.mediumCardsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+@media (min-width: 640px) {
+  .mediumCardsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Правая боковая панель */
+.sidebarPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+// .cardImageFallback {
+//   max-width: 100%;
+//   height: auto;
+//   -o-object-fit: cover;
+//   object-fit: cover;
+//   border-radius: 6px;
+// }

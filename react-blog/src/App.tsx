@@ -19,8 +19,9 @@ import {
   postSmallMock,
 } from "./components/PostCard/mockData";
 import { PostsBlog } from "./components/PostsBlog/PostsBlog";
+import { PostsMainPage } from "components/PostsMainPage/PostsMainPage";
 
-// import { ButtonSignIn, ButtonMenu } from "./components/Button/ButtonTitle";
+import { ButtonSignIn, ButtonMenu } from "./components/Button/ButtonTitle";
 
 // function App() {
 //   // 2. Создаем состояние для текста кнопки меню.
@@ -53,9 +54,9 @@ import { PostsBlog } from "./components/PostsBlog/PostsBlog";
 //HW_40
 export function App() {
   //HW_40_1
-  // const [currentScreen, setCurrentScreen] = useState<"signin" | "success">(
-  //   "signin",
-  // );
+  const [currentScreen, setCurrentScreen] = useState<"signin" | "success">(
+    "signin",
+  );
   // return (
   //   <Layout>
   //     {currentScreen === "signin" ? <SignIn /> : <Success />}
@@ -84,21 +85,22 @@ export function App() {
   // );
   //HW_40_2
   // Фейковые данные для навигации согласно интерфейсу prevPost и nextPost
-  // const prevPost = {
-  //   title: "10 Things to Know...",
-  //   link: "/posts/1",
-  // };
+  const prevPost = {
+    title: "10 Things to Know...",
+    link: "/posts/1",
+  };
 
-  // const nextPost = {
-  //   title: "A Beautiful Video...",
-  //   link: "/posts/3",
-  // };
+  const nextPost = {
+    title: "A Beautiful Video...",
+    link: "/posts/3",
+  };
   return (
     <Layout>
       {/* <Box> */}
-      <PostsBlog />
+      <PostsMainPage />
+      {/* <PostsBlog /> */}
       {/* <PostCardFull
-        post={postFullMock}
+         post={postFullMock}
         prevPost={prevPost}
         nextPost={nextPost}
       /> */}

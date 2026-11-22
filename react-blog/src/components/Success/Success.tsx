@@ -1,11 +1,12 @@
 // import { Header } from "../Header/Header";
 // import { Footer } from "../Footer/Footer";
-import { Container } from "@mui/material";
+// import { Container } from "@mui/material";
 import styles from "./Success.module.css";
 
 export function Success() {
   return (
-    <Container>
+    <>
+      {/* <Container> */}
       {/* <div className={styles.successPageWrapper}> */}
       {/* <Header /> */}
       <main className={styles.successPageMain}>
@@ -24,6 +25,7 @@ export function Success() {
       </main>
       {/* <Footer /> */}
       {/* </div> */}
-    </Container>
+      {/* </Container> */}
+    </>
   );
 }

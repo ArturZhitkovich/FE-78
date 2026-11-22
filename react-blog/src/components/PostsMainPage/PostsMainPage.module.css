@@ -1,0 +1,40 @@
+@charset "UTF-8";
+/* Контейнер всей страницы */
+/* Главная двухколоночная сетка (Лента + Боковая панель) */
+.mainGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .mainGrid {
+    grid-template-columns: 3fr 1fr;
+  }
+}
+/* Левая новостная лента */
+.newsFeed {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+/* Сетки для средних карточек (2 в ряд) */
+.mediumCardsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .mediumCardsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+/* Правая боковая панель */
+.sidebarPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}/*# sourceMappingURL=PostsMainPage.module.css.map */

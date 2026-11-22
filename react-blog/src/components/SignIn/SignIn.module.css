@@ -5,71 +5,66 @@
   background-color: #ffffff;
 }
 
-.pageMain {
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 40px 24px;
-  box-sizing: border-box;
+.signinPageMain {
+  padding: 5px 20px;
 }
 
-.backToHome {
+.signinBackToHome {
   text-decoration: none;
   font-size: 14px;
   display: inline-block;
 }
 
-.formPageTitle {
-  font-size: 32px;
-  font-weight: 700;
+.signinPageTitle {
+  margin: 0 auto;
 }
 
-.authCard {
-  border: 1px solid #e5e7eb;
+.signinAuthCard {
+  border: 1px solid;
   border-radius: 6px;
-  padding: 32px;
+  padding: 20px;
   max-width: 420px;
   margin: auto;
 }
 
-.inputFieldGroup {
+.signinInputFieldGroup {
   margin-bottom: 20px;
 }
 
-.inputLabel {
+.signinInputLabel {
   display: block;
   font-size: 14px;
   font-weight: 500;
-  margin-bottom: 6px;
 }
 
-.formInput {
+.signinInput {
   width: 100%;
+  margin-top: 6px;
   padding: 12px;
   border: 1px solid #e5e7eb;
   border-radius: 4px;
   font-size: 14px;
 }
-.formInput::-moz-placeholder {
+.signinInput::-moz-placeholder {
   color: #e5e7eb;
   font-style: italic;
   opacity: 1;
 }
-.formInput::placeholder {
+.signinInput::placeholder {
   color: #e5e7eb;
   font-style: italic;
   opacity: 1;
 }
 
-.forgotPasswordLink {
+.signinForgotPasswordLink {
   display: block;
   text-decoration: none;
   font-size: 14px;
-  margin-bottom: 24px;
 }
 
-.submitActionBtn {
+.signinSubmitActionBtn {
   width: 100%;
+  margin-top: 24px;
   background-color: #1e3a8a;
   color: white;
   border: none;
@@ -79,17 +74,17 @@
   cursor: pointer;
 }
 
-.submitActionBtn:hover {
+.signinSubmitActionBtn:hover {
   background-color: #1d4ed8;
 }
 
-.authFooterRedirect {
+.signinAuthFooterRedirect {
   text-align: center;
   font-size: 14px;
   margin-top: 24px;
 }
 
-.authFooterRedirect a {
+.signinAuthFooterRedirect a {
   text-decoration: none;
   font-weight: 600;
 }/*# sourceMappingURL=SignIn.module.css.map */

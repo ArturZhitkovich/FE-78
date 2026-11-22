@@ -1,55 +1,57 @@
 // import { Header } from "../Header/Header";
 // import { Footer } from "../Footer/Footer";
-import { Container } from "@mui/material";
+// import { Container } from "@mui/material";
 import styles from "./SignIn.module.css";
 
 export function SignIn() {
   return (
-    <Container>
+    <>
+      {/* <Container> */}
       {/* <div className={styles.pageWrapper}> */}
-        {/* <Header /> */}
-        <main className={styles.pageMain}>
-          <a href="#back" className={styles.backToHome}>
-            ← Back to home
-          </a>
-          <h1 className={styles.formPageTitle}>Sign In</h1>
+      {/* <Header /> */}
+      <main className={styles.signinPageMain}>
+        <a href="#back" className={styles.signinBackToHome}>
+          ← Back to home
+        </a>
+        <h1 className={styles.signinPageTitle}>Sign In</h1>
 
-          <div className={styles.authCard}>
-            <form onSubmit={(e) => e.preventDefault()}>
-              <div className={styles.inputFieldGroup}>
-                <label className={styles.inputLabel}>Email</label>
-                <input
-                  type="email"
-                  placeholder="Your email"
-                  className={styles.formInput}
-                />
-              </div>
+        <div className={styles.signinAuthCard}>
+          <form onSubmit={(e) => e.preventDefault()}>
+            <div className={styles.signinInputFieldGroup}>
+              <label className={styles.signinInputLabel}>Email</label>
+              <input
+                type="email"
+                placeholder="Your email"
+                className={styles.signinInput}
+              />
+            </div>
 
-              <div className={styles.inputFieldGroup}>
-                <label className={styles.inputLabel}>Password</label>
-                <input
-                  type="password"
-                  placeholder="Your password"
-                  className={styles.formInput}
-                />
-              </div>
+            <div className={styles.signinInputFieldGroup}>
+              <label className={styles.signinInputLabel}>Password</label>
+              <input
+                type="password"
+                placeholder="Your password"
+                className={styles.signinInput}
+              />
+            </div>
 
-              <a href="#forgot" className={styles.forgotPasswordLink}>
-                Forgot password?
-              </a>
+            <a href="#forgot" className={styles.signinForgotPasswordLink}>
+              Forgot password?
+            </a>
 
-              <button type="submit" className={styles.submitActionBtn}>
-                Sign In
-              </button>
+            <button type="submit" className={styles.signinSubmitActionBtn}>
+              Sign In
+            </button>
 
-              <div className={styles.authFooterRedirect}>
-                Don't have an account? <a href="#signup">Sign up</a>
-              </div>
-            </form>
-          </div>
-        </main>
-        {/* <Footer /> */}
+            <div className={styles.signinAuthFooterRedirect}>
+              Don't have an account? <a href="#signup">Sign up</a>
+            </div>
+          </form>
+        </div>
+      </main>
+      {/* <Footer /> */}
       {/* </div> */}
-    </Container>
+      {/* </Container> */}
+    </>
   );
 }

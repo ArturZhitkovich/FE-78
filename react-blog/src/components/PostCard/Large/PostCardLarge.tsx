@@ -1,5 +1,6 @@
 import styles from "./PostCardLarge.module.css";
 import type { Post } from "../types";
+import { PostCardFooter } from "../PostCardFooter/PostCardFooter";
 
 interface PostCardLargeProps {
   post: Post;
@@ -19,24 +20,7 @@ export const PostCardLarge = ({ post }: PostCardLargeProps) => {
         </div>
       </div>
       {/* Нижняя панель с кнопками  */}
-      <div className={styles.footer}>
-        <div className={styles.actionsLeft}>
-          <button className={styles.iconButton} aria-label="Like">
-            👍
-          </button>
-          <button className={styles.iconButton} aria-label="Dislike">
-            👎
-          </button>
-        </div>
-        <div className={styles.actionsRight}>
-          <button className={styles.iconButton} aria-label="Bookmark">
-            🔖
-          </button>
-          <button className={styles.iconButton} aria-label="More">
-            •••
-          </button>
-        </div>
-      </div>
+      <PostCardFooter />
     </div>
   );
 };

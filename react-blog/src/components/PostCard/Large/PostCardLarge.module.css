@@ -1,85 +1,65 @@
 @charset "UTF-8";
-/* Общие стили для страницы */
-/* Главный контейнер поста — теперь во всю ширину контента */
 .card {
-  background-color: #ffffff; /* Белый фон для лучшего контраста на всю страницу */
-  max-width: 800px; /* Оптимальная ширина для чтения длинных текстов */
-  width: 100%;
-  padding: 0; /* Внутренние отступы лучше распределить по элементам */
-  box-shadow: none; /* Для чистой полностраничной верстки тень обычно убирают */
+  border-radius: 4px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  justify-self: center;
 }
 
-/* Измененная раскладка: заголовок и картинка теперь идут друг за другом сверху вниз */
 .mainContent {
   display: flex;
-  flex-direction: column; /* Элементы выстраиваются вертикально */
   gap: 24px;
-  margin-bottom: 32px;
 }
 
 .textContent {
-  width: 100%;
+  flex: 1;
 }
 
 .date {
   text-align: left;
-  color: #8a8a8a;
-  font-size: 14px;
-  margin-bottom: 12px;
+  font-size: 13px;
+  margin: 0 0 8px 0;
 }
 
-/* Крупный, выразительный заголовок для полноценной статьи */
 .title {
-  text-align: left; /* Выравнивание по левому краю для заголовков выглядит естественнее */
-  color: #1a1a1a;
-  font-size: 36px; /* Увеличенный размер для полностраничного формата */
-  font-weight: 800;
-  line-height: 1.2;
-  margin: 0 0 24px 0;
-  letter-spacing: -0.5px;
+  text-align: left;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0 0 16px 0;
 }
 
-/* Контейнер изображения теперь растягивается на всю ширину текстового блока */
+.text {
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+
 .imageContainer {
-  width: 100%;
-  max-height: 500px; /* Ограничение по высоте, чтобы картинка не занимала весь экран */
-  overflow: hidden;
-  border-radius: 6px;
-  margin-bottom: 16px;
+  width: 40%;
+  flex-shrink: 0;
 }
 
 .image {
   width: 100%;
-  height: 100%;
+  aspect-ratio: 1/1;
+  border-radius: 4px; /* Скругление углов для картинки */
   -o-object-fit: cover;
-     object-fit: cover; /* Красиво масштабирует картинку внутри контейнера */
-  display: block;
+  object-fit: cover; /* Квадратное кадрирование изображения без искажений */
 }
 
-/* Стилизация основного текста для удобного чтения лонгридов */
-.text {
-  text-align: left; /* Выравнивание по левому краю (justify часто создает некрасивые пробелы) */
-  color: #333333; /* Более темный цвет для снижения нагрузки на глаза */
-  font-size: 18px; /* Стандартный комфортный размер для чтения статей */
-  line-height: 1.65;
-  margin: 0 0 20px 0; /* Отступы между абзацами */
-}
-
-/* Нижняя панель взаимодействия */
+/* Панель взаимодействия снизу (лайки, закладки) */
 .footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-top: 1px solid #e9ecef;
-  padding: 24px 0; /* Увеличенные отступы */
-  margin-top: 40px;
-  color: #6c757d;
 }
 
 .actionsLeft,
 .actionsRight {
   display: flex;
-  gap: 20px;
+  gap: 16px;
 }
 
 .iconButton {
@@ -87,15 +67,14 @@
   border: none;
   cursor: pointer;
   color: #6c757d;
-  font-size: 18px;
-  padding: 6px;
+  font-size: 16px;
+  padding: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s, transform 0.2s;
+  transition: color 0.2s;
 }
 
 .iconButton:hover {
-  color: #1a1a1a;
-  transform: translateY(-1px); /* Легкий интерактивный эффект при наведении */
+  color: #212529;
 }/*# sourceMappingURL=PostCardLarge.module.css.map */

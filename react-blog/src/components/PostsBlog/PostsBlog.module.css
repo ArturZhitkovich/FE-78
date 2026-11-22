@@ -28,7 +28,7 @@
 .newsFeed {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 3rem;
 }
 
 /* Сетки для средних карточек (2 в ряд) */
@@ -47,7 +47,7 @@
 .sidebarPanel {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 3rem;
 }
 
 .cardImageFallback {

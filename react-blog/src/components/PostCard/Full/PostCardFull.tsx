@@ -9,6 +9,7 @@ import { NextPost } from "components/NextPost/NextPost";
 import styles from "./PostCardFull.module.css";
 import type { Post } from "../types";
 import { Container } from "@mui/material";
+import { PostCardFooter } from "../PostCardFooter/PostCardFooter";
 
 interface PostCardFullProps {
   post: Post;
@@ -43,24 +44,7 @@ export const PostCardFull = ({
         </div>
 
         {/* Нижняя панель с кнопками взаимодействия */}
-        <div className={styles.footer}>
-          <div className={styles.actionsLeft}>
-            <button className={styles.iconButton} aria-label="Like">
-              👍
-            </button>
-            <button className={styles.iconButton} aria-label="Dislike">
-              👎
-            </button>
-          </div>
-          <div className={styles.actionsRight}>
-            <button className={styles.iconButton} aria-label="Bookmark">
-              🔖
-            </button>
-            <button className={styles.iconButton} aria-label="More">
-              •••
-            </button>
-          </div>
-        </div>
+        <PostCardFooter />
 
         {/* Секция навигации между публикациями */}
         {(prevPost || nextPost) && (

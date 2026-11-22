@@ -9,6 +9,8 @@ export const postFullMock: Post = {
   lesson_num: 39,
   title: "Astronauts prep for new solar arrays on nearly seven-hour spacewalk",
   author: "Yuri Gagarin",
+  likes: 177,
+  dislikes: 64,
 };
 
 export const postLargeMock: Post = {
@@ -20,6 +22,8 @@ export const postLargeMock: Post = {
   lesson_num: 39,
   title: "Astronauts prep for new solar arrays on nearly seven-hour spacewalk",
   author: "Neil Armstrong",
+  likes: 82,
+  dislikes: 21,
 };
 
 export const postMediumMock: Post = {
@@ -31,6 +35,8 @@ export const postMediumMock: Post = {
   lesson_num: 39,
   title: "Astronauts prep for new solar arrays on nearly seven-hour spacewalk",
   author: "Neil Armstrong",
+  likes: 49,
+  dislikes: 7,
 };
 
 export const postSmallMock: Post = {
@@ -42,6 +48,8 @@ export const postSmallMock: Post = {
   lesson_num: 39,
   title: "Astronauts prep for new solar arrays on nearly seven-hour spacewalk",
   author: "Neil Armstrong",
+  likes: 187,
+  dislikes: 6,
 };
 
 //массив объектов
@@ -56,6 +64,8 @@ export const postsAll: Post[] = [
     title:
       "Astronauts prep for new solar arrays on nearly seven-hour spacewalk ...",
     author: "NASA Media Team",
+    likes: 108,
+    dislikes: 36,
   },
   {
     id: 2,
@@ -66,6 +76,8 @@ export const postsAll: Post[] = [
     lesson_num: 2,
     title: "Perseverance Rover Uncovers New Clues About Ancient Mars Lake",
     author: "Dr. Elena Rostova",
+    likes: 55,
+    dislikes: 19,
   },
   {
     id: 3,
@@ -77,6 +89,8 @@ export const postsAll: Post[] = [
     title:
       "James Webb Telescope Captures Breathtaking Views of Deep Stellar Nursery",
     author: "Alex Mercer",
+    likes: 91,
+    dislikes: 43,
   },
   {
     id: 4,
@@ -87,6 +101,8 @@ export const postsAll: Post[] = [
     lesson_num: 4,
     title: "Artemis Program Finalizes Trajectory for Next Crewed Lunar Flyby",
     author: "Sarah Jenkins",
+    likes: 69,
+    dislikes: 28,
   },
   {
     id: 5,
@@ -97,6 +113,8 @@ export const postsAll: Post[] = [
     lesson_num: 5,
     title: "Water Vapor Detected in Atmosphere of Nearby Earth-sized Exoplanet",
     author: "Prof. Michael Chang",
+    likes: 19,
+    dislikes: 1,
   },
   {
     id: 6,
@@ -107,6 +125,8 @@ export const postsAll: Post[] = [
     lesson_num: 6,
     title: "Saturn's Rings are Disappearing Faster Than Previously Estimated",
     author: "Dr. Marcus Vance",
+    likes: 14,
+    dislikes: 2,
   },
   {
     id: 7,
@@ -117,6 +137,8 @@ export const postsAll: Post[] = [
     lesson_num: 7,
     title: "Deep Space Probe Successfully Anchors to Near-Earth Asteroid",
     author: "Elena Rostova",
+    likes: 73,
+    dislikes: 4,
   },
   {
     id: 8,
@@ -127,6 +149,8 @@ export const postsAll: Post[] = [
     lesson_num: 8,
     title: "Massive Solar Flare Triggers Stunning Aurorae Across Mid-Latitudes",
     author: "Solar Weather Bureau",
+    likes: 67,
+    dislikes: 7,
   },
   {
     id: 9,
@@ -137,6 +161,8 @@ export const postsAll: Post[] = [
     lesson_num: 9,
     title: "Europa Clipper Detects Thermal Anomalies in Icy Crust",
     author: "Dr. David Kim",
+    likes: 38,
+    dislikes: 5,
   },
   {
     id: 10,
@@ -148,6 +174,8 @@ export const postsAll: Post[] = [
     title:
       "Astronomers Map the Magnetic Fields of a Supermassive Black Hole Jet",
     author: "Event Horizon Team",
+    likes: 94,
+    dislikes: 1,
   },
   {
     id: 11,
@@ -159,6 +187,8 @@ export const postsAll: Post[] = [
     title:
       "First Private Module Successfully Docks with Commercial Space Outpost",
     author: "Sarah Jenkins",
+    likes: 116,
+    dislikes: 9,
   },
   {
     id: 12,
@@ -170,6 +200,8 @@ export const postsAll: Post[] = [
     title:
       "Webb Telescope Finds Compelling Evidence of First Confirmed Exomoon",
     author: "Prof. Michael Chang",
+    likes: 167,
+    dislikes: 17,
   },
   {
     id: 13,
@@ -181,6 +213,8 @@ export const postsAll: Post[] = [
     title:
       "Next-Gen Ion Propulsion System Completes 10,000 Hours of Continuous Testing",
     author: "Alex Mercer",
+    likes: 29,
+    dislikes: 26,
   },
   {
     id: 14,
@@ -191,6 +225,8 @@ export const postsAll: Post[] = [
     lesson_num: 14,
     title: "New Gaia Data Refines Timeline of Andromeda-Milky Way Collision",
     author: "ESA Astronomy Desk",
+    likes: 37,
+    dislikes: 11,
   },
   {
     id: 15,
@@ -202,5 +238,7 @@ export const postsAll: Post[] = [
     title:
       "Automated Greenhouse Prototype Successfully Sprouts Crops on Mars Surface",
     author: "Dr. Elena Rostova",
+    likes: 17,
+    dislikes: 5,
   },
 ];

@@ -1,0 +1,31 @@
+@charset "UTF-8";
+.footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto;
+  align-items: center;
+  border-top: 1px solid #e0e0e0;
+}
+
+.actionsLeft,
+.actionsRight {
+  display: flex;
+  gap: 20px;
+}
+
+.iconButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, transform 0.2s;
+}
+
+.iconButton:hover {
+  color: #900020;
+  transform: translateY(-1px); /* Легкий интерактивный эффект при наведении */
+}/*# sourceMappingURL=PostCardFooter.module.css.map */

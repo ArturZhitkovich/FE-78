@@ -1,0 +1,39 @@
+// /* Нижняя панель взаимодействия */
+.footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto;
+  align-items: center;
+  border-top: 1px solid #e0e0e0;
+  //   border-top: 1px solid #e9ecef;
+  //   padding: 24px 0; /* Увеличенные отступы */
+  //   margin-top: 40px;
+  //   color: #6c757d;
+}
+
+.actionsLeft,
+.actionsRight {
+  display: flex;
+  gap: 20px;
+}
+
+.iconButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  //   color: #6c757d;
+  font-size: 18px;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    color 0.2s,
+    transform 0.2s;
+}
+
+.iconButton:hover {
+  color: #900020;
+  //   color: #1a1a1a;
+  transform: translateY(-1px); /* Легкий интерактивный эффект при наведении */
+}

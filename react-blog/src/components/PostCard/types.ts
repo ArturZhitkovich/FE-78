@@ -7,4 +7,6 @@ export interface Post {
   lesson_num: number;
   title: string;
   author: string;
+  likes?: number;
+  dislikes?: number;
 }
