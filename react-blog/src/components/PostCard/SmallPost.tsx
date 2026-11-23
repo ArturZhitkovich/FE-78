@@ -1,4 +1,4 @@
-import type { PostCardProps } from './PostCard';
+import { random, type PostCardProps } from './PostCard';
 import styles from './PostCard.module.scss';
 import { CardFooter } from './CardFooter';
 import { Link } from 'react-router';
@@ -28,7 +28,7 @@ export const SmallPost = ({ post, variant }: PostCardProps) => {
                 
                 {image && (
                     <img 
-                        src={image} 
+                        src={`https://static.photos/science/640x360/${random()}`} 
                         alt={title} 
                         className={`${styles.image} ${styles[variant]}`} 
                     />

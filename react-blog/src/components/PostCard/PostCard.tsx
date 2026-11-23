@@ -3,6 +3,7 @@ import { MediumPost } from './MediumPost';
 import { SmallPost } from './SmallPost';
 import type { Post, Variant } from '../../types';
 
+export const random = () => Math.round(Math.random() * 20);
 
 export type PostCardProps = {
   post: Post;

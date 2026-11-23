@@ -1,28 +1,22 @@
-import { useEffect, useState } from "react"
-import { mockPosts} from "../../constants"
-import type { Post } from "../../types"
 import { PostList } from "../PostList/PostList"
+import { Skeleton } from "@mui/material"
+import { useGetPostsQuery } from "../../store/api/postsApi";
 
-const getPost = (): Promise<Post[]> =>{
-  return new Promise((resolve) =>{
-    setTimeout(() =>{
-      resolve(mockPosts)
-    }, 300)
-  })
-}
+
 
 export const PostListPage = () =>{
-    const [posts, setPosts] = useState<Post[]>([])
 
-    useEffect(() =>{
-    getPost()
-      .then((result) => {
-      setPosts(result)
-    }
-  )}, []);
+const {data, isLoading} = useGetPostsQuery({limit: 11});
+const posts = data?.results ?? [];
 
   return (
+    <>
+      {isLoading ? (
+        <Skeleton width={600} height={300}/>
+      ) : (
         <PostList posts={posts} />
+      )}
+    </>
     )
     
 }
