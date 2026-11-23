@@ -592,6 +592,20 @@ footer { grid-column: 1 / -1; color: var(--muted); font-size: 13px; border-top: 
       <li><a href="#q-structure"><span>6.12</span>Структура</a></li>
       <li><a href="#q-mistakes"><span>6.13</span>Частые ошибки</a></li>
     </ol>
+    <p class="toc-group">Глава 7 · HTTP и API</p>
+    <ol>
+      <li><a href="#h-http"><span>7.1</span>HTTP-запрос</a></li>
+      <li><a href="#h-codes"><span>7.2</span>Коды ответа</a></li>
+      <li><a href="#h-axios"><span>7.3</span>axios</a></li>
+      <li><a href="#h-tools"><span>7.4</span>Swagger и Postman</a></li>
+      <li><a href="#h-fetch"><span>7.5</span>Получаем данные</a></li>
+      <li><a href="#h-filters"><span>7.6</span>Поиск и фильтры</a></li>
+      <li><a href="#h-pagination"><span>7.7</span>Пагинация</a></li>
+      <li><a href="#h-page"><span>7.8</span>Страница постов</a></li>
+      <li><a href="#h-check"><span>7.9</span>Проверяем</a></li>
+      <li><a href="#h-activate"><span>7.10</span>Активация аккаунта</a></li>
+      <li><a href="#h-mistakes"><span>7.11</span>Частые ошибки</a></li>
+    </ol>
   </nav>
 
   <main>
@@ -2880,9 +2894,842 @@ export const LoginPage = () =&gt; {
         <li><b>Забыли слеш в конце адреса</b><code>/blog/posts</code> вместо <code>/blog/posts/</code> — сервер ответит редиректом <code>301</code>. <code>GET</code> переживёт это лишним запросом, а <code>POST</code> и <code>DELETE</code> сломаются.</li>
       </ul>
     </section>
+    <header class="chapter" id="ch7">
+      <p class="eyebrow">Глава 7</p>
+      <h2 class="chapter-title">HTTP и работа с API</h2>
+      <p>Повторяем HTTP: методы, заголовки, коды ответа. Пробуем запросы в Swagger и Postman, подключаем axios и учим страницу постов искать, фильтровать, сортировать и листать.</p>
+    </header>
+    <section id="h-http">
+      <div class="step-head"><span class="step-num">7.1</span><h2>HTTP-запрос: повторение</h2></div>
+      <p>Каждый раз, когда фронтенд что-то просит у сервера, уходит <b>HTTP-запрос</b>. В ответ приходит <b>HTTP-ответ</b>. Посмотрим на настоящий запрос к нашему серверу.</p>
+      <div class="code"><div class="code-head"><span class="file">Запрос</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">GET /blog/posts/?limit=2&amp;search=react HTTP/1.1    ← метод, путь, параметры
+Host: studapi.teachmeskills.by                    ← заголовки
+Accept: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+                                                  ← пустая строка
+                                                  ← тело (у GET его нет)</code></pre></div>
+      <div class="code"><div class="code-head"><span class="file">Ответ</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">HTTP/1.1 200 OK                                   ← код ответа
+Content-Type: application/json                    ← заголовки
+Allow: GET, POST, HEAD, OPTIONS
+
+{"count":17,"next":"...","previous":null,"results":[...]}   ← тело</code></pre></div>
+      <p>Из чего состоит запрос:</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Часть</th><th>Что это</th><th>Пример</th></tr></thead>
+        <tbody>
+          <tr><td><b>Метод</b></td><td>что хотим сделать</td><td><code>GET</code>, <code>POST</code>, <code>DELETE</code></td></tr>
+          <tr><td><b>URL</b></td><td>куда стучимся</td><td><code>https://studapi.teachmeskills.by/blog/posts/</code></td></tr>
+          <tr><td><b>Параметры</b></td><td>уточнения после <code>?</code>, через <code>&amp;</code></td><td><code>?limit=2&amp;search=react</code></td></tr>
+          <tr><td><b>Заголовки</b></td><td>служебная информация о запросе</td><td><code>Authorization: Bearer ...</code></td></tr>
+          <tr><td><b>Тело</b></td><td>данные, которые отправляем</td><td>JSON или <code>FormData</code> с картинкой</td></tr>
+        </tbody>
+      </table></div>
+      <p>Разберём адрес по частям:</p>
+      <div class="code"><div class="code-head"><span class="file">Схема</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">https://studapi.teachmeskills.by/blog/posts/?limit=2&amp;search=react
+└─┬──┘  └──────────┬──────────┘└────┬─────┘ └────────┬─────────┘
+протокол         домен             путь       query-параметры</code></pre></div>
+      <h3>Методы</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Метод</th><th>Что делает</th><th>Тело</th><th>В нашем API</th></tr></thead>
+        <tbody>
+          <tr><td><code>GET</code></td><td>получить данные</td><td>нет</td><td><code>GET /blog/posts/</code> — список постов</td></tr>
+          <tr><td><code>POST</code></td><td>создать</td><td>есть</td><td><code>POST /blog/posts/</code> — создать пост</td></tr>
+          <tr><td><code>PUT</code></td><td>заменить <b>целиком</b></td><td>есть</td><td><code>PUT /blog/posts/{id}/</code> — все поля поста</td></tr>
+          <tr><td><code>PATCH</code></td><td>изменить <b>часть</b></td><td>есть</td><td><code>PATCH /blog/posts/{id}/</code> — только title</td></tr>
+          <tr><td><code>DELETE</code></td><td>удалить</td><td>нет</td><td><code>DELETE /blog/posts/{id}/</code> — удалить пост</td></tr>
+        </tbody>
+      </table></div>
+      <p><code>PUT</code> и <code>PATCH</code> часто путают. <code>PUT</code> — «вот новый пост целиком» (забыли поле — сервер ответит ошибкой). <code>PATCH</code> — «поменяй только это»:</p>
+      <div class="code"><div class="code-head"><span class="file">PATCH: меняем только заголовок</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">const formData = new FormData();
+formData.append('title', 'Новый заголовок');
+
+await fetch('https://studapi.teachmeskills.by/blog/posts/1862/', {
+  method: 'PATCH',
+  headers: { Authorization: `Bearer ${localStorage.getItem('access')}` },
+  body: formData,
+});</code></pre></div>
+      <div class="note"><span class="note-label">Подсказка</span><p>Почему <code>FormData</code>, а не JSON? Посмотрите в Swagger блок <b>Request body</b> у <code>PATCH /blog/posts/{id}/</code>: сервер принимает <code>multipart/form-data</code>. Формат тела всегда смотрим в документации.</p></div>
+      <h3>Заголовки</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Заголовок</th><th>Где</th><th>Зачем</th></tr></thead>
+        <tbody>
+          <tr><td><code>Content-Type</code></td><td>запрос</td><td>в каком формате тело: <code>application/json</code>, <code>multipart/form-data</code></td></tr>
+          <tr><td><code>Accept</code></td><td>запрос</td><td>в каком формате хотим ответ</td></tr>
+          <tr><td><code>Authorization</code></td><td>запрос</td><td>кто мы: <code>Bearer &lt;access-токен&gt;</code></td></tr>
+          <tr><td><code>Content-Type</code></td><td>ответ</td><td>в каком формате пришёл ответ</td></tr>
+          <tr><td><code>Allow</code></td><td>ответ</td><td>какие методы можно для этого адреса</td></tr>
+        </tbody>
+      </table></div>
+      <p>Запрос со всеми частями на <code>fetch</code>:</p>
+      <div class="code"><div class="code-head"><span class="file">fetch: логин</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">const response = await fetch('https://studapi.teachmeskills.by/auth/jwt/create/', {
+  method: 'POST',                                     // метод
+  headers: { 'Content-Type': 'application/json' },   // заголовки
+  body: JSON.stringify({ email, password }),          // тело
+});
+
+const tokens = await response.json(); // { access, refresh }</code></pre></div>
+      <div class="note warn"><span class="note-label">Важно</span><p>Для <code>FormData</code> заголовок <code>Content-Type</code> <b>не ставим</b>. Браузер сам напишет <code>multipart/form-data; boundary=...</code>. Если указать руками — пропадёт <code>boundary</code>, и сервер не разберёт файл.</p></div>
+      <div class="note"><span class="note-label">Подсказка</span><p>Все запросы видно в браузере: <b>F12 → Network</b>. Кликаем по запросу: <b>Headers</b> — метод, адрес, заголовки; <b>Payload</b> — тело и параметры; <b>Response</b> — что ответил сервер.</p></div>
+    </section>
+    <section id="h-codes">
+      <div class="step-head"><span class="step-num">7.2</span><h2>Коды ответа HTTP</h2></div>
+      <p>Первая строка ответа — <b>код</b> (статус). По первой цифре сразу понятно, что произошло:</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Группа</th><th>Смысл</th><th>Кто виноват</th></tr></thead>
+        <tbody>
+          <tr><td><code>1xx</code></td><td>информационные</td><td>— (не встречаем)</td></tr>
+          <tr><td><code>2xx</code></td><td>успех</td><td>все молодцы</td></tr>
+          <tr><td><code>3xx</code></td><td>перенаправление</td><td>адрес поменялся</td></tr>
+          <tr><td><code>4xx</code></td><td>ошибка <b>клиента</b></td><td>мы: не тот запрос</td></tr>
+          <tr><td><code>5xx</code></td><td>ошибка <b>сервера</b></td><td>бэкенд</td></tr>
+        </tbody>
+      </table></div>
+      <p>Коды, которые можно получить от нашего сервера (проверьте сами в Swagger или Postman):</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Код</th><th>Название</th><th>Когда</th><th>Пример</th></tr></thead>
+        <tbody>
+          <tr><td><code>200</code></td><td>OK</td><td>всё получилось, есть тело</td><td><code>GET /blog/posts/</code></td></tr>
+          <tr><td><code>201</code></td><td>Created</td><td>создали запись</td><td>частый ответ на <code>POST</code> в других API</td></tr>
+          <tr><td><code>204</code></td><td>No Content</td><td>получилось, тела нет</td><td><code>DELETE /blog/posts/{id}/</code>, у нас и <code>POST /blog/posts/</code></td></tr>
+          <tr><td><code>301</code></td><td>Moved Permanently</td><td>адрес переехал</td><td><code>GET /blog/posts</code> — без слеша в конце</td></tr>
+          <tr><td><code>400</code></td><td>Bad Request</td><td>неправильные данные</td><td><code>POST /auth/jwt/create/</code> с пустым телом</td></tr>
+          <tr><td><code>401</code></td><td>Unauthorized</td><td>не знаем, кто вы</td><td>неверный пароль или истёк токен</td></tr>
+          <tr><td><code>403</code></td><td>Forbidden</td><td>знаем, кто вы, но нельзя</td><td>например, изменить чужой пост</td></tr>
+          <tr><td><code>404</code></td><td>Not Found</td><td>такого нет</td><td><code>GET /blog/posts/999999/</code></td></tr>
+          <tr><td><code>500</code></td><td>Internal Server Error</td><td>сервер сломался</td><td>не наша вина, но показать ошибку надо</td></tr>
+        </tbody>
+      </table></div>
+      <p>Тело ошибки тоже полезно — сервер объясняет, что не так:</p>
+      <div class="code"><div class="code-head"><span class="file">Ответы с ошибками</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-json">// 404  GET /blog/posts/999999/
+{ "detail": "Not found." }
+
+// 400  POST /auth/jwt/create/  с телом {}
+{ "email": ["This field is required."], "password": ["This field is required."] }
+
+// 401  POST /auth/jwt/create/  с неверным паролем
+{ "detail": "No active account found with the given credentials" }</code></pre></div>
+      <div class="note warn"><span class="note-label">Важно</span><p><code>fetch</code> <b>не считает ошибкой</b> ответы <code>4xx</code> и <code>5xx</code>. Промис отклоняется только если сети нет совсем. Код надо проверять самим:</p></div>
+      <div class="code"><div class="code-head"><span class="file">fetch: проверяем код</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">const response = await fetch('https://studapi.teachmeskills.by/blog/posts/999999/');
+
+console.log(response.status); // 404
+console.log(response.ok);     // false — но catch НЕ сработает
+
+if (!response.ok) {
+  throw new Error(`Ошибка ${response.status}`);
+}
+const post = await response.json();</code></pre></div>
+      <p>Как реагировать в интерфейсе:</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Код</th><th>Что показываем</th></tr></thead>
+        <tbody>
+          <tr><td><code>400</code></td><td>ошибки под полями формы (из тела ответа)</td></tr>
+          <tr><td><code>401</code></td><td>отправляем на страницу логина</td></tr>
+          <tr><td><code>403</code></td><td>«Нет прав», прячем кнопку</td></tr>
+          <tr><td><code>404</code></td><td>«Пост не найден»</td></tr>
+          <tr><td><code>5xx</code>, сеть</td><td>«Что-то пошло не так, попробуйте позже»</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+    <section id="h-axios">
+      <div class="step-head"><span class="step-num">7.3</span><h2>axios</h2></div>
+      <p><b>axios</b> — библиотека для HTTP-запросов. Делает то же, что <code>fetch</code>, но удобнее:</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Задача</th><th><code>fetch</code></th><th><code>axios</code></th></tr></thead>
+        <tbody>
+          <tr><td>Разобрать JSON</td><td><code>await response.json()</code></td><td>уже в <code>response.data</code></td></tr>
+          <tr><td>Отправить JSON</td><td><code>JSON.stringify</code> + заголовок</td><td>просто объект: <code>axios.post(url, data)</code></td></tr>
+          <tr><td>Ошибка на <code>4xx</code> / <code>5xx</code></td><td>нет, проверяем <code>response.ok</code></td><td><b>да</b>, попадаем в <code>catch</code></td></tr>
+          <tr><td>Query-параметры</td><td>собираем строку руками</td><td><code>{ params: { limit: 10 } }</code></td></tr>
+          <tr><td>Общий адрес и заголовки</td><td>пишем в каждом запросе</td><td>один раз в <code>axios.create</code></td></tr>
+          <tr><td>Перехват всех запросов</td><td>нет</td><td><code>interceptors</code></td></tr>
+        </tbody>
+      </table></div>
+      <h3>Устанавливаем</h3>
+      <div class="code"><div class="code-head"><span class="file">Терминал</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-bash">npm install axios</code></pre></div>
+      <h3>Первый запрос</h3>
+      <div class="code"><div class="code-head"><span class="file">Пример</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">import axios from 'axios';
+
+const response = await axios.get('https://studapi.teachmeskills.by/blog/posts/', {
+  params: { limit: 2, search: 'react' }, // → ?limit=2&amp;search=react
+});
+
+response.status;  // 200
+response.headers; // заголовки ответа
+response.data;    // { count: 17, next: '...', previous: null, results: [...] }</code></pre></div>
+      <div class="note"><span class="note-label">Подсказка</span><p><code>params</code> кодирует значения сам: <code>search: 'Основы'</code> превратится в <code>search=%D0%9E...</code>. Параметры со значением <code>undefined</code> в адрес не попадают.</p></div>
+      <h3>Свой экземпляр с <code>baseURL</code></h3>
+      <p>Чтобы не писать адрес сервера и токен в каждом запросе, создаём один настроенный экземпляр:</p>
+      <div class="code"><div class="code-head"><span class="file">src/api/http.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">import axios from 'axios';
+
+export const http = axios.create({
+  baseURL: 'https://studapi.teachmeskills.by',
+  timeout: 10_000, // ждём ответ не дольше 10 секунд
+});
+
+// перед каждым запросом: если есть токен — добавляем заголовок
+http.interceptors.request.use((config) =&gt; {
+  const token = localStorage.getItem('access');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// после каждого ответа: общий обработчик ошибок
+http.interceptors.response.use(
+  (response) =&gt; response,
+  (error) =&gt; {
+    if (axios.isAxiosError(error) &amp;&amp; error.response?.status === 401) {
+      localStorage.removeItem('access'); // токен протух — выкидываем
+    }
+    return Promise.reject(error); // ошибку отдаём дальше, в catch
+  },
+);</code></pre></div>
+      <p><b>Interceptor</b> («перехватчик») — функция, через которую проходит каждый запрос или ответ. Удобно для токена, логов и общей обработки ошибок.</p>
+      <h3>Все запросы к постам в одном месте</h3>
+      <div class="code"><div class="code-head"><span class="file">src/api/posts.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">import { http } from './http';
+import type { Post } from '../types/post';
+
+// ответ любого списка с пагинацией
+export interface Paginated&lt;T&gt; {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+// что можно передать в GET /blog/posts/
+export interface PostsParams {
+  limit?: number;
+  offset?: number;
+  search?: string;
+  ordering?: string;
+  author__course_group?: number;
+}
+
+export const postsService = {
+  getList: (params: PostsParams, signal?: AbortSignal) =&gt;
+    http.get&lt;Paginated&lt;Post&gt;&gt;('/blog/posts/', { params, signal }).then((res) =&gt; res.data),
+
+  getById: (id: number) =&gt;
+    http.get&lt;Post&gt;(`/blog/posts/${id}/`).then((res) =&gt; res.data),
+
+  create: (formData: FormData) =&gt;
+    http.post('/blog/posts/', formData),
+
+  update: (id: number, formData: FormData) =&gt;
+    http.patch&lt;Post&gt;(`/blog/posts/${id}/`, formData).then((res) =&gt; res.data),
+
+  remove: (id: number) =&gt;
+    http.delete(`/blog/posts/${id}/`),
+};</code></pre></div>
+      <p><code>http.get&lt;Paginated&lt;Post&gt;&gt;</code> — подсказываем TypeScript, что лежит в <code>res.data</code>.</p>
+      <h3>Обработка ошибок</h3>
+      <div class="code"><div class="code-head"><span class="file">Пример</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">import axios from 'axios';
+
+try {
+  const post = await postsService.getById(999999);
+} catch (error) {
+  if (axios.isAxiosError(error)) {
+    error.response?.status; // 404
+    error.response?.data;   // { detail: 'Not found.' }
+    // error.response нет — значит, сервер не ответил (нет сети, таймаут)
+  }
+}</code></pre></div>
+    </section>
+    <section id="h-tools">
+      <div class="step-head"><span class="step-num">7.4</span><h2>Инструменты: Swagger и Postman</h2></div>
+      <p>Прежде чем писать код, запрос надо <b>попробовать руками</b>: какие параметры, что приходит в ответ, какие ошибки. Для этого два инструмента.</p>
+      <h3>Swagger</h3>
+      <p>Открываем <a href="https://studapi.teachmeskills.by/api/schema/swagger-ui/#/blog/blog_posts_retrieve" target="_blank" rel="noopener">Swagger нашего API</a> — ссылка ведёт сразу на <code>GET /blog/posts/{id}/</code>.</p>
+      <ol class="rules">
+        <li>Раскрываем блок <b>GET /blog/posts/{id}/</b>.</li>
+        <li>Жмём <b>Try it out</b>, в поле <code>id</code> пишем <code>1862</code>.</li>
+        <li>Жмём <b>Execute</b>.</li>
+        <li>Смотрим ниже:<ul><li><b>Curl</b> — тот же запрос командой для терминала;</li><li><b>Request URL</b> — точный адрес, который ушёл на сервер;</li><li><b>Server response</b> — код (<code>200</code>), тело и заголовки ответа.</li></ul></li>
+        <li>Пробуем <code>id</code> = <code>999999</code> — видим <code>404</code> и <code>{ "detail": "Not found." }</code>.</li>
+      </ol>
+      <p>Что ещё есть в Swagger:</p>
+      <ul>
+        <li><b>Parameters</b> — какие query-параметры принимает адрес. У <code>GET /blog/posts/</code> это <code>limit</code>, <code>offset</code>, <code>search</code>, <code>ordering</code>, <code>author__course_group</code>.</li>
+        <li><b>Request body</b> — что и в каком формате отправлять (для <code>POST</code>, <code>PATCH</code>).</li>
+        <li><b>Responses</b> — какие коды и тела возможны.</li>
+        <li><b>Schemas</b> (внизу страницы) — все типы: какие поля у <code>Post</code>, какие обязательные, ограничения (<code>title</code> — до 250 символов, <code>text</code> — от 200).</li>
+        <li>Кнопка <b>Authorize</b> (замок справа вверху) — вставляем <code>access</code>-токен без слова <code>Bearer</code>, и все запросы пойдут с авторизацией.</li>
+      </ul>
+      <h3>Postman</h3>
+      <p><a href="https://www.postman.com/downloads/" target="_blank" rel="noopener">Postman</a> — программа для отправки запросов. В отличие от Swagger, запросы в ней <b>сохраняются</b>, их можно собрать в коллекцию и передать коллеге.</p>
+      <p><b>Запрос на список постов:</b></p>
+      <ol class="rules">
+        <li><b>New → HTTP</b>, метод <code>GET</code>, адрес <code>https://studapi.teachmeskills.by/blog/posts/</code>.</li>
+        <li>Вкладка <b>Params</b>: <code>limit</code> = <code>5</code>, <code>search</code> = <code>react</code>, <code>ordering</code> = <code>-date</code>. Postman сам допишет их в адрес.</li>
+        <li><b>Send</b>. Внизу — тело ответа, код <code>200 OK</code>, время и размер, вкладка <b>Headers</b>.</li>
+      </ol>
+      <p><b>Логин и токен:</b></p>
+      <ol class="rules">
+        <li><code>POST https://studapi.teachmeskills.by/auth/jwt/create/</code></li>
+        <li><b>Body → raw → JSON</b>:</li>
+      </ol>
+      <div class="code"><div class="code-head"><span class="file">JSON</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-json">{ "email": "you@mail.com", "password": "your-password" }</code></pre></div>
+      <ol class="rules" start="3">
+        <li><b>Send</b> — в ответе <code>access</code> и <code>refresh</code>.</li>
+        <li>Чтобы не копировать токен руками, во вкладке <b>Scripts → Post-response</b> пишем:</li>
+      </ol>
+      <div class="code"><div class="code-head"><span class="file">Postman → Scripts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-js">pm.environment.set('access', pm.response.json().access);</code></pre></div>
+      <ol class="rules" start="5">
+        <li>В других запросах: вкладка <b>Authorization → Bearer Token</b>, значение <code>{{access}}</code>.</li>
+      </ol>
+      <p><b>Переменные окружения.</b> Создаём <b>Environment</b> с переменной <code>baseUrl</code> = <code>https://studapi.teachmeskills.by</code> и пишем адреса как <code>{{baseUrl}}/blog/posts/</code>. Поменялся сервер — меняем одну переменную.</p>
+      <p><b>Импорт всего API.</b> <b>Import</b> → вставляем <code>https://studapi.teachmeskills.by/api/schema/?format=json</code> → Postman сам создаст коллекцию со всеми запросами из Swagger.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Инструмент</th><th>Когда удобен</th></tr></thead>
+        <tbody>
+          <tr><td>Swagger</td><td>быстро посмотреть документацию и попробовать запрос, ничего не ставя</td></tr>
+          <tr><td>Postman</td><td>сохранить запросы, переменные, токен; повторять одно и то же много раз</td></tr>
+          <tr><td>Network</td><td>посмотреть, что <b>на самом деле</b> отправляет наш фронтенд</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+    <section id="h-fetch">
+      <div class="step-head"><span class="step-num">7.5</span><h2>Получаем данные с API</h2></div>
+      <p>Соберём хук, который грузит посты через axios. Он показывает всё, что нужно при загрузке данных: состояние загрузки, ошибку и отмену старого запроса.</p>
+      <div class="code"><div class="code-head"><span class="file">src/hooks/usePosts.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { postsService, type Paginated, type PostsParams } from '../api/posts';
+import type { Post } from '../types/post';
+
+export const usePosts = (params: PostsParams) =&gt; {
+  const [data, setData] = useState&lt;Paginated&lt;Post&gt; | null&gt;(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState&lt;string | null&gt;(null);
+
+  // объект params новый на каждой отрисовке — в зависимости кладём примитивы
+  const { limit, offset, search, ordering, author__course_group } = params;
+
+  useEffect(() =&gt; {
+    const controller = new AbortController();
+    setIsLoading(true);
+    setError(null);
+
+    postsService
+      .getList({ limit, offset, search, ordering, author__course_group }, controller.signal)
+      .then(setData)
+      .catch((err) =&gt; {
+        if (axios.isCancel(err)) return; // запрос отменили сами — это не ошибка
+        setError(axios.isAxiosError(err) ? `Ошибка ${err.response?.status ?? 'сети'}` : 'Что-то пошло не так');
+      })
+      .finally(() =&gt; {
+        if (!controller.signal.aborted) setIsLoading(false);
+      });
+
+    // параметры поменялись или ушли со страницы — отменяем старый запрос
+    return () =&gt; controller.abort();
+  }, [limit, offset, search, ordering, author__course_group]);
+
+  return { data, isLoading, error };
+};</code></pre></div>
+      <p>Использование:</p>
+      <div class="code"><div class="code-head"><span class="file">Пример</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">const { data, isLoading, error } = usePosts({ limit: 10, ordering: '-date' });
+
+if (isLoading) return &lt;Skeleton height={300} /&gt;;
+if (error) return &lt;Alert severity="error"&gt;{error}&lt;/Alert&gt;;
+
+return data?.results.map((post) =&gt; &lt;Card key={post.id} postData={post} /&gt;);</code></pre></div>
+      <p>Зачем <code>AbortController</code>: пользователь быстро печатает «r», «re», «rea»… — уходят три запроса. Ответы могут прийти <b>в любом порядке</b>, и на экране окажется результат для «re». Отмена старого запроса это исключает.</p>
+      <h3>А как же RTK Query?</h3>
+      <p>В нашем проекте посты уже грузит RTK Query (глава 6) — он делает всё то же самое: загрузка, ошибки, отмена, плюс кэш. Тот же запрос — одна строка:</p>
+      <div class="code"><div class="code-head"><span class="file">Пример</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">const { data, isLoading, isError } = useBlogPostsListQuery({ limit: 10, ordering: '-date' });</code></pre></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Когда</th><th>Чем грузим</th></tr></thead>
+        <tbody>
+          <tr><td>Проект с Redux Toolkit (наш блог)</td><td>RTK Query</td></tr>
+          <tr><td>Проект без Redux, простой запрос</td><td>axios + <code>useEffect</code></td></tr>
+          <tr><td>Код не в компоненте (скрипт, утилита)</td><td>axios / <code>fetch</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>Можно и совместить: RTK Query будет отправлять запросы <b>через наш axios-экземпляр</b> с его interceptors. Для этого заменяем <code>fetchBaseQuery</code> на свою функцию:</p>
+      <div class="code"><div class="code-head"><span class="file">src/store/api/axiosBaseQuery.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">import type { BaseQueryFn } from '@reduxjs/toolkit/query';
+import axios, { type AxiosRequestConfig } from 'axios';
+import { http } from '../../api/http';
+
+type Args = {
+  url: string;
+  method?: AxiosRequestConfig['method'];
+  body?: unknown;
+  params?: AxiosRequestConfig['params'];
+};
+
+type ApiError = { status?: number; data?: unknown };
+
+export const axiosBaseQuery: BaseQueryFn&lt;Args, unknown, ApiError&gt; = async ({ url, method = 'GET', body, params }) =&gt; {
+  try {
+    const res = await http({ url, method, data: body, params });
+    return { data: res.data };
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      return { error: { status: err.response?.status, data: err.response?.data } };
+    }
+    return { error: { data: String(err) } };
+  }
+};</code></pre></div>
+      <div class="code"><div class="code-head"><span class="file">src/store/api/baseApi.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">export const baseApi = createApi({
+  reducerPath: 'api',
+  baseQuery: axiosBaseQuery, // вместо fetchBaseQuery({ baseUrl, prepareHeaders })
+  tagTypes: ['blog'],
+  endpoints: () =&gt; ({}),
+});</code></pre></div>
+      <p>Сгенерированный <code>blogApi.generated.ts</code> менять не надо: он передаёт <code>url</code>, <code>method</code>, <code>body</code>, <code>params</code> — ровно то, что принимает <code>axiosBaseQuery</code>.</p>
+    </section>
+    <section id="h-filters">
+      <div class="step-head"><span class="step-num">7.6</span><h2>Поиск, фильтр, сортировка</h2></div>
+      <p>На сервере <b>1418 постов</b>, а к нам приходит страница из 10. Если фильтровать массив на фронтенде, найдём только среди этих 10. Поэтому искать, фильтровать и сортировать просим <b>сервер</b> — через query-параметры.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Операция</th><th>Параметр</th><th>Пример</th><th>Что вернёт</th></tr></thead>
+        <tbody>
+          <tr><td>Поиск</td><td><code>search</code></td><td><code>?search=react</code></td><td>посты, где в заголовке или тексте есть «react» (17 шт.)</td></tr>
+          <tr><td>Фильтр</td><td><code>author__course_group</code></td><td><code>?author__course_group=1</code></td><td>посты авторов из группы с <code>id = 1</code> (8 шт.)</td></tr>
+          <tr><td>Сортировка</td><td><code>ordering</code></td><td><code>?ordering=-date</code></td><td>сначала новые</td></tr>
+        </tbody>
+      </table></div>
+      <p>Параметры комбинируются:</p>
+      <div class="code"><div class="code-head"><span class="file">Схема</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">/blog/posts/?search=react&amp;author__course_group=1&amp;ordering=-date&amp;limit=10&amp;offset=0</code></pre></div>
+      <h3>Сортировка: <code>ordering</code></h3>
+      <p>Пишем имя поля. Минус впереди — по убыванию.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Значение</th><th>Порядок</th></tr></thead>
+        <tbody>
+          <tr><td><code>date</code></td><td>сначала старые</td></tr>
+          <tr><td><code>-date</code></td><td>сначала новые</td></tr>
+          <tr><td><code>title</code></td><td>по названию А → Я</td></tr>
+          <tr><td><code>-title</code></td><td>по названию Я → А</td></tr>
+          <tr><td><code>lesson_num</code></td><td>по номеру урока, по возрастанию</td></tr>
+          <tr><td><code>-lesson_num</code></td><td>по номеру урока, по убыванию</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note"><span class="note-label">Подсказка</span><p>Неизвестное поле (<code>?ordering=foo</code>) сервер <b>молча игнорирует</b> и отдаёт посты в обычном порядке. Ошибки не будет — если сортировка «не работает», проверьте имя поля.</p></div>
+      <h3>Фильтр по группе: <code>author__course_group</code></h3>
+      <p>Список групп берём с сервера: <code>GET /blog/groups/</code> → <code>{ id, name }</code>. <code>id</code> группы передаём в фильтр.</p>
+      <div class="code"><div class="code-head"><span class="file">JSON</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-json">{ "count": 20, "results": [{ "id": 1, "name": "JS 1" }, { "id": 2, "name": "JS TEST 2" }, ...] }</code></pre></div>
+      <h3>Один и тот же запрос тремя способами</h3>
+      <div class="code"><div class="code-head"><span class="file">Пример</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">// 1. fetch — строку собираем сами, кириллицу кодируем
+const search = encodeURIComponent('Основы');
+fetch(`https://studapi.teachmeskills.by/blog/posts/?search=${search}&amp;ordering=-date`);
+
+// 2. axios — объектом, кодирует сам
+http.get('/blog/posts/', { params: { search: 'Основы', ordering: '-date' } });
+
+// 3. RTK Query (сгенерированный хук) — имена в camelCase!
+useBlogPostsListQuery({ search: 'Основы', ordering: '-date', authorCourseGroup: 1 });</code></pre></div>
+      <div class="note"><span class="note-label">Подсказка</span><p>В проекте уже есть помощник <code>buildQs</code> (<code>src/shared/build-qs.ts</code>): <code>buildQs('/blog/posts/', { search: 'Основы', limit: 10 })</code> → <code>/blog/posts/?search=%D0%9E...&amp;limit=10</code>. Пустые <code>null</code> / <code>undefined</code> выкидывает сам.</p></div>
+      <h3>Поиск без лишних запросов: debounce</h3>
+      <p>Если отправлять запрос на каждую букву, слово «react» — это 5 запросов. <b>Debounce</b> («подождать, пока успокоится»): запрос уходит, только когда пользователь перестал печатать на 500 мс.</p>
+      <div class="code"><div class="code-head"><span class="file">src/hooks/useDebounce.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">import { useEffect, useState } from 'react';
+
+// возвращает value, но только после того, как оно delay мс не менялось
+export const useDebounce = &lt;T&gt;(value: T, delay = 500): T =&gt; {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() =&gt; {
+    const timer = setTimeout(() =&gt; setDebounced(value), delay);
+    // value поменялось раньше — старый таймер отменяем
+    return () =&gt; clearTimeout(timer);
+  }, [value, delay]);
+
+  return debounced;
+};</code></pre></div>
+      <div class="code"><div class="code-head"><span class="file">Пример</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">const [search, setSearch] = useState('');
+const debouncedSearch = useDebounce(search, 500);
+
+// в поле — search (меняется сразу), в запрос — debouncedSearch
+useBlogPostsListQuery({ search: debouncedSearch || undefined });</code></pre></div>
+    </section>
+    <section id="h-pagination">
+      <div class="step-head"><span class="step-num">7.7</span><h2>Пагинация</h2></div>
+      <p>Отдать все 1418 постов разом — долго и тяжело. Сервер отдаёт их <b>страницами</b>. У нас пагинация через <code>limit</code> и <code>offset</code>:</p>
+      <ul>
+        <li><code>limit</code> — сколько постов на странице;</li>
+        <li><code>offset</code> — сколько постов пропустить с начала.</li>
+      </ul>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Страница</th><th><code>limit</code></th><th><code>offset</code></th><th>Какие посты</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>10</td><td>0</td><td>1–10</td></tr>
+          <tr><td>2</td><td>10</td><td>10</td><td>11–20</td></tr>
+          <tr><td>3</td><td>10</td><td>20</td><td>21–30</td></tr>
+          <tr><td><i>N</i></td><td>10</td><td>(N − 1) × 10</td><td></td></tr>
+        </tbody>
+      </table></div>
+      <p>В ответе сервер подсказывает, что дальше:</p>
+      <div class="code"><div class="code-head"><span class="file">JSON</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-json">{
+  "count": 1418,
+  "next": "http://studapi.teachmeskills.by/blog/posts/?limit=10&amp;offset=20",
+  "previous": "http://studapi.teachmeskills.by/blog/posts/?limit=10",
+  "results": [ ... 10 постов ... ]
+}</code></pre></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Поле</th><th>Что это</th></tr></thead>
+        <tbody>
+          <tr><td><code>count</code></td><td>сколько <b>всего</b> постов (с учётом поиска и фильтра)</td></tr>
+          <tr><td><code>next</code></td><td>адрес следующей страницы, <code>null</code> — это последняя</td></tr>
+          <tr><td><code>previous</code></td><td>адрес предыдущей, <code>null</code> — это первая</td></tr>
+          <tr><td><code>results</code></td><td>посты текущей страницы</td></tr>
+        </tbody>
+      </table></div>
+      <p>Две формулы, которые нужны всегда:</p>
+      <div class="code"><div class="code-head"><span class="file">Пример</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">const offset = (page - 1) * LIMIT;                  // номер страницы → offset
+const pageCount = Math.ceil(count / LIMIT);          // сколько всего страниц: 1418 / 10 → 142</code></pre></div>
+      <p>Проверьте последнюю страницу: <code>?limit=2&amp;offset=1416</code> — придут 2 поста и <code>"next": null</code>.</p>
+      <div class="note warn"><span class="note-label">Важно</span><p>Изменили поиск, фильтр или сортировку — <b>сбрасываем страницу на первую</b>. Иначе можно остаться на 50-й странице, когда по новому поиску постов всего 17.</p></div>
+      <p>Для страниц в MUI есть готовый компонент:</p>
+      <div class="code"><div class="code-head"><span class="file">Пример</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { Pagination } from '@mui/material';
+
+&lt;Pagination
+  count={pageCount}                         // сколько всего страниц
+  page={page}                               // текущая (с 1)
+  onChange={(_, value) =&gt; setPage(value)}   // value — номер новой страницы
+/&gt;</code></pre></div>
+    </section>
+    <section id="h-page">
+      <div class="step-head"><span class="step-num">7.8</span><h2>Собираем страницу постов</h2></div>
+      <p>Соберём всё вместе на <code>/posts</code>: поиск, фильтр по группе, сортировка и страницы.</p>
+      <p>Где хранить фильтры? В <code>useState</code> они пропадут при перезагрузке, а ссылку на «вторую страницу поиска react» не отправить другу. Поэтому храним их <b>в адресе</b>: <code>/posts?search=react&amp;group=1&amp;ordering=-date&amp;page=2</code>. Читаем и пишем через <code>useSearchParams</code> из <code>react-router</code>.</p>
+      <div class="code"><div class="code-head"><span class="file">src/pages/PostsPage/PostsPage.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { useSearchParams } from 'react-router';
+import {
+  Alert, Box, FormControl, InputLabel, MenuItem, Pagination,
+  Select, Skeleton, Stack, TextField, Typography,
+} from '@mui/material';
+import { Card } from '../../components/Card/Card';
+import {
+  useBlogGroupsListQuery,
+  useBlogPostsListQuery,
+} from '../../store/api/blogApi.generated';
+import { useDebounce } from '../../hooks/useDebounce';
+
+const LIMIT = 10;
+
+const SORT_OPTIONS = [
+  { value: '-date', label: 'Сначала новые' },
+  { value: 'date', label: 'Сначала старые' },
+  { value: 'title', label: 'По названию' },
+  { value: '-lesson_num', label: 'По номеру урока' },
+];
+
+export const PostsPage = () =&gt; {
+  // всё состояние фильтров живёт в адресе: /posts?search=react&amp;group=1&amp;ordering=-date&amp;page=2
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const search = searchParams.get('search') ?? '';
+  const group = searchParams.get('group') ?? '';           // '' — все группы
+  const ordering = searchParams.get('ordering') ?? '-date';
+  const page = Number(searchParams.get('page') ?? 1);
+
+  // в поле текст меняется сразу, а запрос уходит через 500 мс после последней буквы
+  const debouncedSearch = useDebounce(search, 500);
+
+  // меняем часть параметров, остальные оставляем как есть
+  const updateParams = (changes: Record&lt;string, string&gt;) =&gt; {
+    setSearchParams(
+      (prev) =&gt; {
+        const next = new URLSearchParams(prev);
+        Object.entries(changes).forEach(([key, value]) =&gt; {
+          if (value) next.set(key, value);
+          else next.delete(key); // пустое значение — убираем из адреса
+        });
+        return next;
+      },
+      { replace: true }, // не засоряем историю каждой буквой
+    );
+  };
+
+  // любой фильтр меняет набор постов → возвращаемся на 1-ю страницу
+  const changeFilter = (key: string, value: string) =&gt; updateParams({ [key]: value, page: '' });
+
+  const { data, isLoading, isFetching, isError } = useBlogPostsListQuery({
+    limit: LIMIT,
+    offset: (page - 1) * LIMIT,
+    search: debouncedSearch || undefined,
+    ordering,
+    authorCourseGroup: group ? Number(group) : undefined,
+  });
+
+  const { data: groups } = useBlogGroupsListQuery({ limit: 100 });
+
+  const posts = data?.results ?? [];
+  const pageCount = Math.ceil((data?.count ?? 0) / LIMIT);
+
+  return (
+    &lt;Stack spacing={2}&gt;
+      &lt;Stack direction={{ xs: 'column', md: 'row' }} spacing={2}&gt;
+        &lt;TextField
+          label="Поиск"
+          value={search}
+          onChange={(e) =&gt; changeFilter('search', e.target.value)}
+          fullWidth
+        /&gt;
+
+        &lt;FormControl sx={{ minWidth: 180 }}&gt;
+          &lt;InputLabel id="group-label"&gt;Группа&lt;/InputLabel&gt;
+          &lt;Select
+            labelId="group-label"
+            label="Группа"
+            value={group}
+            onChange={(e) =&gt; changeFilter('group', e.target.value)}
+          &gt;
+            &lt;MenuItem value=""&gt;Все группы&lt;/MenuItem&gt;
+            {groups?.results?.map((g) =&gt; (
+              &lt;MenuItem key={g.id} value={String(g.id)}&gt;{g.name}&lt;/MenuItem&gt;
+            ))}
+          &lt;/Select&gt;
+        &lt;/FormControl&gt;
+
+        &lt;FormControl sx={{ minWidth: 200 }}&gt;
+          &lt;InputLabel id="sort-label"&gt;Сортировка&lt;/InputLabel&gt;
+          &lt;Select
+            labelId="sort-label"
+            label="Сортировка"
+            value={ordering}
+            onChange={(e) =&gt; changeFilter('ordering', e.target.value)}
+          &gt;
+            {SORT_OPTIONS.map((o) =&gt; (
+              &lt;MenuItem key={o.value} value={o.value}&gt;{o.label}&lt;/MenuItem&gt;
+            ))}
+          &lt;/Select&gt;
+        &lt;/FormControl&gt;
+      &lt;/Stack&gt;
+
+      &lt;Typography color="text.secondary"&gt;Найдено: {data?.count ?? 0}&lt;/Typography&gt;
+
+      {isError &amp;&amp; &lt;Alert severity="error"&gt;Не удалось загрузить посты&lt;/Alert&gt;}
+
+      {isLoading ? (
+        &lt;Skeleton height={300} /&gt;
+      ) : (
+        // старые посты видны, пока грузятся новые, — просто делаем их бледнее
+        &lt;Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, opacity: isFetching ? 0.5 : 1 }}&gt;
+          {posts.map((post) =&gt; (
+            &lt;Card key={post.id} postData={post} variant="search" /&gt;
+          ))}
+          {!isFetching &amp;&amp; posts.length === 0 &amp;&amp; &lt;Typography&gt;Ничего не найдено&lt;/Typography&gt;}
+        &lt;/Box&gt;
+      )}
+
+      {pageCount &gt; 1 &amp;&amp; (
+        &lt;Pagination
+          count={pageCount}
+          page={page}
+          onChange={(_, value) =&gt; {
+            updateParams({ page: value === 1 ? '' : String(value) });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        /&gt;
+      )}
+    &lt;/Stack&gt;
+  );
+};</code></pre></div>
+      <p>Что здесь важно:</p>
+      <ol class="rules">
+        <li><b>Фильтры в URL.</b> Перезагрузили страницу или отправили ссылку — фильтры и страница на месте. Кнопка «Назад» браузера тоже работает.</li>
+        <li>**<code>changeFilter</code> сбрасывает <code>page</code>.** Поменяли поиск — снова первая страница.</li>
+        <li>**<code>isLoading</code> vs <code>isFetching</code>.** <code>isLoading</code> — только самая первая загрузка (показываем скелетон). <code>isFetching</code> — любой запрос, в том числе при смене страницы. Пока он идёт, в <code>data</code> лежат <b>старые</b> посты — показываем их бледными, а не пустой экран.</li>
+        <li><b>Кэш.</b> Вернулись на страницу 1 после страницы 2 — RTK Query отдаст её из кэша без запроса.</li>
+        <li><b>Имена параметров.</b> В URL сайта — короткие <code>group</code>, <code>page</code>; в запросе к серверу — <code>authorCourseGroup</code>, <code>offset</code>. Это разные вещи: адрес нашего сайта мы придумываем сами.</li>
+      </ol>
+    </section>
+    <section id="h-check">
+      <div class="step-head"><span class="step-num">7.9</span><h2>Проверяем</h2></div>
+      <ol class="rules">
+        <li>Открываем <code>/posts</code>. В <b>Network</b> — запрос <code>posts/?limit=10&amp;offset=0&amp;ordering=-date</code>, внизу пагинация на 142 страницы.</li>
+        <li>Печатаем в поиск «react» — запрос уходит <b>один</b>, через полсекунды после последней буквы. «Найдено: 17», страниц — 2.</li>
+        <li>Выбираем группу — в запросе появился <code>author__course_group=...</code>, адрес сайта стал <code>/posts?search=react&amp;group=1</code>.</li>
+        <li>Переключаем сортировку — порядок постов меняется, в запросе <code>ordering=...</code>.</li>
+        <li>Жмём страницу 3 — в запросе <code>offset=20</code>. Возвращаемся на 1 — запроса нет, сработал кэш.</li>
+        <li>Перезагружаем страницу (F5) — фильтры и номер страницы остались.</li>
+        <li>Тот же запрос повторяем в Swagger и Postman — ответы совпадают.</li>
+      </ol>
+    </section>
+    <section id="h-activate">
+      <div class="step-head"><span class="step-num">7.10</span><h2>Практика: активация аккаунта</h2></div>
+      <p>После регистрации (<code>POST /auth/users/</code>) аккаунт <b>не активен</b>: войти нельзя. Сервер отправляет на почту ссылку вида:</p>
+      <div class="code"><div class="code-head"><span class="file">Схема</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">http://studapi.teachmeskills.by//activate/Ng/atj1td-0c06a11c61dc8b14966eb7abb176cb9e
+                                 └──┬───┘ └┬┘ └──────────────┬──────────────────┘
+                                  путь    uid               token</code></pre></div>
+      <p>Сама по себе ссылка ничего не делает. Нам нужна страница по этому адресу, которая возьмёт <code>uid</code> и <code>token</code> из URL и отправит их на сервер — <a href="https://studapi.teachmeskills.by/api/schema/swagger-ui/#/auth/auth_users_activation_create" target="_blank" rel="noopener">POST /auth/users/activation/</a>.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Ответ</th><th>Что значит</th><th>Что показываем</th></tr></thead>
+        <tbody>
+          <tr><td><code>204</code></td><td>аккаунт активирован</td><td>«Аккаунт активирован!»</td></tr>
+          <tr><td><code>400</code></td><td>неверный <code>uid</code> или <code>token</code></td><td>«Ссылка недействительна»</td></tr>
+          <tr><td><code>403</code></td><td>ссылка уже использована, аккаунт активен</td><td>«Аккаунт уже активирован»</td></tr>
+          <tr><td><code>5xx</code>, сеть</td><td>сервер недоступен</td><td>«Попробуйте позже»</td></tr>
+        </tbody>
+      </table></div>
+      <p>План:</p>
+      <ol class="rules">
+        <li>Получить хук запроса из Swagger через генератор.</li>
+        <li>Добавить роут <code>/activate/:uid/:token</code>.</li>
+        <li>На странице в <code>useEffect</code> отправить запрос и показать результат.</li>
+      </ol>
+      <h3>Хук запроса из Swagger</h3>
+      <p>Отдельный slice или thunk не нужен: запрос к серверу — работа RTK Query (глава 6). Адрес есть в Swagger, значит хук сгенерируем. Добавляем его в фильтр генератора:</p>
+      <div class="code"><div class="code-head"><span class="file">openapi-config.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">// берём только нужное: посты, группы, логин и активацию
+filterEndpoints: [/^blog/, /^authJwt/, /^authUsersActivation/],</code></pre></div>
+      <div class="code"><div class="code-head"><span class="file">Терминал</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-bash">npm run api:generate</code></pre></div>
+      <p>В <code>blogApi.generated.ts</code> появился эндпоинт и хук:</p>
+      <div class="code"><div class="code-head"><span class="file">src/store/api/blogApi.generated.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">authUsersActivationCreate: build.mutation&lt;
+  AuthUsersActivationCreateApiResponse,
+  AuthUsersActivationCreateApiArg
+&gt;({
+  query: (queryArg) =&gt; ({
+    url: `/auth/users/activation/`,
+    method: "POST",
+    body: queryArg.activationRequest,
+  }),
+  invalidatesTags: ["auth"],
+}),
+
+// ...
+export type AuthUsersActivationCreateApiArg = {
+  activationRequest: ActivationRequest; // { uid: string; token: string }
+};
+// ...
+export const { /* ... */ useAuthUsersActivationCreateMutation } = injectedRtkApi;</code></pre></div>
+      <p>Это <code>POST</code>, поэтому генератор сделал <b>mutation</b>: хук не запускается сам, а возвращает функцию <code>activate</code>, которую мы вызываем, когда нужно.</p>
+      <h3>Роут</h3>
+      <div class="code"><div class="code-head"><span class="file">src/paths.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">export const PATHS = {
+  // ...
+  activate: (uid: string, token: string) =&gt; `/activate/${uid}/${token}`,
+};</code></pre></div>
+      <div class="code"><div class="code-head"><span class="file">src/App.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { ActivatePage } from './pages/ActivatePage/ActivatePage';
+
+// внутри &lt;Route element={&lt;Layout /&gt;}&gt;, НЕ внутри ProtectedRoute:
+// по ссылке из письма приходит ещё не залогиненный пользователь
+&lt;Route path={PATHS.activate(':uid', ':token')} element={&lt;ActivatePage /&gt;} /&gt;</code></pre></div>
+      <p>В письме адрес с <b>двойным слешем</b>: <code>//activate/...</code>. Роутер такой путь не узнает и покажет 404. Убираем лишние слеши до запуска приложения:</p>
+      <div class="code"><div class="code-head"><span class="file">src/main.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">// В письме ссылка с двойным слешем: //activate/uid/token — роутер такой адрес не узнаёт.
+// Убираем лишние слеши в начале до старта приложения.
+if (window.location.pathname.startsWith('//')) {
+  const { pathname, search, hash } = window.location;
+  window.history.replaceState(null, '', pathname.replace(/^\/+/, '/') + search + hash);
+}
+
+createRoot(document.getElementById('root')!).render(
+  // ...
+);</code></pre></div>
+      <h3>Страница</h3>
+      <div class="code"><div class="code-head"><span class="file">src/pages/ActivatePage/ActivatePage.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { useEffect, useRef } from 'react';
+import { Link, useParams } from 'react-router';
+import { Alert, Box, Button, CircularProgress, Typography } from '@mui/material';
+import { useAuthUsersActivationCreateMutation } from '../../store/api/blogApi.generated';
+
+// текст ошибки по коду ответа сервера
+const getErrorMessage = (error: unknown) =&gt; {
+  const status = (error as { status?: number | string } | undefined)?.status;
+
+  if (status === 403) return 'Аккаунт уже активирован. Можно войти.';
+  if (status === 400) return 'Ссылка активации недействительна или повреждена.';
+  if (status === 'FETCH_ERROR') return 'Нет соединения с сервером. Попробуйте позже.';
+  return 'Не удалось активировать аккаунт. Попробуйте позже.';
+};
+
+// /activate/:uid/:token — сюда ведёт ссылка из письма после регистрации
+export const ActivatePage = () =&gt; {
+  const { uid, token } = useParams();
+
+  // POST /auth/users/activation/  { uid, token }
+  const [activate, { isUninitialized, isLoading, isSuccess, isError, error }] =
+    useAuthUsersActivationCreateMutation();
+
+  // StrictMode в разработке запускает useEffect дважды.
+  // Второй запрос с тем же токеном сервер отклонит (403), поэтому шлём только один раз.
+  const isSent = useRef(false);
+
+  // при загрузке страницы отправляем uid и token из адреса на бэкенд
+  useEffect(() =&gt; {
+    if (!uid || !token || isSent.current) return;
+    isSent.current = true;
+    activate({ activationRequest: { uid, token } });
+  }, [activate, uid, token]);
+
+  if (!uid || !token) {
+    return &lt;Alert severity="error"&gt;В ссылке нет данных для активации.&lt;/Alert&gt;;
+  }
+
+  // 403 — ссылку уже открывали, аккаунт активен: это не страшная ошибка
+  const isAlreadyActive = isError &amp;&amp; (error as { status?: number }).status === 403;
+
+  return (
+    &lt;Box sx={{ display: 'grid', gap: 2, justifyItems: 'start', py: 2 }}&gt;
+      &lt;Typography variant="h4"&gt;Активация аккаунта&lt;/Typography&gt;
+
+      {(isUninitialized || isLoading) &amp;&amp; (
+        &lt;Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}&gt;
+          &lt;CircularProgress size={24} /&gt;
+          &lt;Typography&gt;Активируем аккаунт…&lt;/Typography&gt;
+        &lt;/Box&gt;
+      )}
+
+      {isSuccess &amp;&amp; &lt;Alert severity="success"&gt;Аккаунт активирован! Теперь можно войти.&lt;/Alert&gt;}
+
+      {isError &amp;&amp; (
+        &lt;Alert severity={isAlreadyActive ? 'info' : 'error'}&gt;{getErrorMessage(error)}&lt;/Alert&gt;
+      )}
+
+      {(isSuccess || isError) &amp;&amp; (
+        &lt;Button component={Link} to="/" variant="contained"&gt;На главную&lt;/Button&gt;
+      )}
+    &lt;/Box&gt;
+  );
+};</code></pre></div>
+      <p>Что здесь важно:</p>
+      <ol class="rules">
+        <li><b>Флаги mutation</b> заменяют свой <code>status</code>: <code>isUninitialized</code> — запрос ещё не отправляли, <code>isLoading</code> — идёт, <code>isSuccess</code> — <code>204</code>, <code>isError</code> — любой другой код.</li>
+        <li>**<code>error.status</code>** — код ответа сервера (<code>400</code>, <code>403</code>), а в <code>error.data</code> — тело ошибки, например <code>{ "token": ["Invalid token for given user."] }</code>. Если сервер вообще не ответил, <code>status</code> будет строкой <code>'FETCH_ERROR'</code>.</li>
+        <li>**<code>useRef</code> от двойного запроса.** В режиме разработки <code>StrictMode</code> вызывает <code>useEffect</code> дважды (3.4). Query RTK Query сам склеивает одинаковые запросы, а mutation — нет: каждый вызов <code>activate</code> — новый <code>POST</code>. Второй запрос с тем же токеном сервер отклонит с <code>403</code>, и пользователь увидит «Уже активирован» вместо «Активирован!». <code>ref</code> переживает повторный запуск эффекта, поэтому запрос уходит один.</li>
+        <li>**<code>403</code> показываем как <code>info</code>, а не <code>error</code>**: аккаунт активен, пользователю можно просто войти.</li>
+      </ol>
+      <p>Поток данных целиком:</p>
+      <div class="code"><div class="code-head"><span class="file">Схема</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">/activate/Ng/atj1td-...  →  useParams() → { uid, token }
+        ↓ useEffect
+activate({ activationRequest: { uid, token } })     isLoading  → спиннер
+        ↓
+POST /auth/users/activation/
+        ↓ 204 → isSuccess                           → «Аккаунт активирован!»
+        ↓ 403 → isError, error.status === 403       → «Уже активирован»
+        ↓ 400 → isError, error.status === 400       → «Ссылка недействительна»</code></pre></div>
+      <h3>Проверяем</h3>
+      <ol class="rules">
+        <li>Регистрируемся: в Swagger <code>POST /auth/users/</code> с <code>username</code>, <code>email</code>, <code>password</code>, <code>course_group</code>.</li>
+        <li>Открываем письмо и меняем в ссылке домен на свой dev-сервер: <code>http://localhost:5173//activate/&lt;uid&gt;/&lt;token&gt;</code>.</li>
+        <li>Видим спиннер, затем «Аккаунт активирован!». В <b>Network</b> — запрос <code>activation/</code> <b>один</b>, ответ <code>204</code>. В Redux DevTools — <code>api/executeMutation/pending</code> → <code>fulfilled</code>.</li>
+        <li>Обновляем страницу (F5) — теперь <code>403</code> и «Аккаунт уже активирован».</li>
+        <li>Портим токен в адресе — <code>400</code> и «Ссылка недействительна».</li>
+        <li>Логинимся этим аккаунтом через <code>POST /auth/jwt/create/</code> — получаем токены.</li>
+      </ol>
+      <div class="note"><span class="note-label">Подсказка</span><p>На почту приходит адрес <code>studapi.teachmeskills.by</code>, а не наш сайт: это домен, настроенный на сервере. При разработке подставляем <code>localhost</code> руками. У Vite порт по умолчанию <code>5173</code>, а не <code>3000</code>.</p></div>
+    </section>
+    <section id="h-mistakes">
+      <div class="step-head"><span class="step-num">7.11</span><h2>Частые ошибки</h2></div>
+      <ul class="mistakes">
+        <li><b>Фильтруем на фронтенде</b>Через <code>posts.filter(...)</code> — ищем только среди 10 загруженных постов, а не среди всех 1418. Поиск и фильтр — параметрами запроса.</li>
+        <li><b>Ждём, что <code>fetch</code> упадёт на <code>404</code></b>Не упадёт. Проверяйте <code>response.ok</code>. axios и RTK Query ошибку дают сами.</li>
+        <li><b>Не сбросили страницу после смены фильтра</b>Остались на странице 50, а постов по запросу 17: пустой экран.</li>
+        <li><b>Перепутали <code>offset</code> и номер страницы</b><code>offset: page</code> вместо <code>offset: (page - 1) * LIMIT</code>.</li>
+        <li><b>Запрос на каждую букву</b>Нет debounce. Сервер получает лишнюю нагрузку, ответы приходят вперемешку.</li>
+        <li><b>В зависимостях <code>useEffect</code> объект <code>params</code></b>Он новый на каждой отрисовке, запросы идут бесконечно. Кладите в зависимости примитивы.</li>
+        <li><b>Нет отмены запроса</b>При быстром вводе на экране остаётся ответ на старый поиск. Используйте <code>AbortController</code> (или RTK Query — он делает это сам).</li>
+        <li><b><code>Content-Type: multipart/form-data</code> руками</b>Для <code>FormData</code> — пропадает <code>boundary</code>, сервер не видит файл. Не указывайте его: браузер и axios поставят сами.</li>
+        <li><b>Кириллица в адресе без кодирования</b>Собирая строку руками, оборачивайте значения в <code>encodeURIComponent</code> или используйте <code>params</code> / <code>buildQs</code>.</li>
+        <li><b><code>ordering</code> с опечаткой</b>Сервер молча игнорирует неизвестное поле, ошибки не будет, просто порядок не тот.</li>
+        <li><b>Сгенерированному хуку передали <code>author__course_group</code></b>У него имя <code>authorCourseGroup</code>. Имена параметров хука смотрите в <code>blogApi.generated.ts</code>.</li>
+        <li><b>Токен в Swagger со словом <code>Bearer</code></b>В окно <b>Authorize</b> вставляем только сам токен, <code>Bearer</code> Swagger добавит сам.</li>
+        <li><b>Запрос активации ушёл дважды</b><code>StrictMode</code> вызывает <code>useEffect</code> два раза, а mutation, в отличие от query, запросы не склеивает. Второй <code>POST</code> получает <code>403</code>. Защищаемся <code>useRef</code> (7.10).</li>
+        <li><b>Ждём, что mutation запустится сама</b>Хук <code>useXxxMutation</code> только возвращает функцию, её надо вызвать в <code>useEffect</code> или обработчике.</li>
+        <li><b>Страница активации внутри <code>ProtectedRoute</code></b>По ссылке из письма приходит незалогиненный пользователь, и его не пустит.</li>
+      </ul>
+    </section>
   </main>
 
-  <footer>Проверено на сборке: Vite 8, React 19, TypeScript, MUI 9, sass-embedded, Redux Toolkit 2 (RTK Query), react-redux 9, @rtk-query/codegen-openapi 2. Ноябрь 2026.</footer>
+  <footer>Проверено на сборке: Vite 8, React 19, TypeScript, MUI 9, sass-embedded, Redux Toolkit 2 (RTK Query), react-redux 9, @rtk-query/codegen-openapi 2, axios 1. Ноябрь 2026.</footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>

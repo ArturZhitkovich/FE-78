@@ -2,18 +2,18 @@ import { Box, Button } from "@mui/material"
 import { useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { dislikePostById, likePostById, selectCountDisLikesOfPost, selectCountLikesOfPost } from "../../store/postsSlice";
-import type { Post } from "../../types/post";
 import { DeleteButton } from "./DeleteButton";
+import type { PostRead } from "../../store/api/blogApi.generated";
 
 interface CardFooterProps {
-  post: Post,
+  post: PostRead,
   onShow: () => void
 }
 
 const useLikePost = (postId: number) => {
   const dispatch = useAppDispatch();
   const likes = useAppSelector(selectCountLikesOfPost(postId));
-  debugger
+
   const increment = useCallback(() => {
     dispatch(likePostById(postId));
   }, [dispatch, postId])

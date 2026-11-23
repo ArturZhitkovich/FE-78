@@ -2697,3 +2697,1035 @@ react-blog/
 - **Аргумент сгенерированного хука не объектом**: `useBlogPostsRetrieveQuery(5)` — нужно `useBlogPostsRetrieveQuery({ id: 5 })`.
 - **`401 Unauthorized`** — нет токена или он истёк. Проверьте `localStorage.getItem('access')` и заголовок `Authorization` во вкладке Network.
 - **Забыли слеш в конце адреса**: `/blog/posts` вместо `/blog/posts/` — сервер ответит редиректом `301`. `GET` переживёт это лишним запросом, а `POST` и `DELETE` сломаются.
+
+---
+
+# Глава 7. HTTP и работа с API
+
+## 7.1. HTTP-запрос: повторение
+
+Каждый раз, когда фронтенд что-то просит у сервера, уходит **HTTP-запрос**. В ответ приходит **HTTP-ответ**. Посмотрим на настоящий запрос к нашему серверу.
+
+*Запрос*
+
+```none
+GET /blog/posts/?limit=2&search=react HTTP/1.1    ← метод, путь, параметры
+Host: studapi.teachmeskills.by                    ← заголовки
+Accept: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+                                                  ← пустая строка
+                                                  ← тело (у GET его нет)
+```
+
+*Ответ*
+
+```none
+HTTP/1.1 200 OK                                   ← код ответа
+Content-Type: application/json                    ← заголовки
+Allow: GET, POST, HEAD, OPTIONS
+
+{"count":17,"next":"...","previous":null,"results":[...]}   ← тело
+```
+
+Из чего состоит запрос:
+
+| Часть         | Что это                                  | Пример                                    |
+| ------------- | ---------------------------------------- | ----------------------------------------- |
+| **Метод**     | что хотим сделать                        | `GET`, `POST`, `DELETE`                   |
+| **URL**       | куда стучимся                            | `https://studapi.teachmeskills.by/blog/posts/` |
+| **Параметры** | уточнения после `?`, через `&`           | `?limit=2&search=react`                   |
+| **Заголовки** | служебная информация о запросе           | `Authorization: Bearer ...`               |
+| **Тело**      | данные, которые отправляем               | JSON или `FormData` с картинкой           |
+
+Разберём адрес по частям:
+
+```none
+https://studapi.teachmeskills.by/blog/posts/?limit=2&search=react
+└─┬──┘  └──────────┬──────────┘└────┬─────┘ └────────┬─────────┘
+протокол         домен             путь       query-параметры
+```
+
+### Методы
+
+| Метод    | Что делает                    | Тело  | В нашем API                                |
+| -------- | ----------------------------- | ----- | ------------------------------------------ |
+| `GET`    | получить данные               | нет   | `GET /blog/posts/` — список постов         |
+| `POST`   | создать                       | есть  | `POST /blog/posts/` — создать пост         |
+| `PUT`    | заменить **целиком**          | есть  | `PUT /blog/posts/{id}/` — все поля поста   |
+| `PATCH`  | изменить **часть**            | есть  | `PATCH /blog/posts/{id}/` — только title   |
+| `DELETE` | удалить                       | нет   | `DELETE /blog/posts/{id}/` — удалить пост  |
+
+`PUT` и `PATCH` часто путают. `PUT` — «вот новый пост целиком» (забыли поле — сервер ответит ошибкой). `PATCH` — «поменяй только это»:
+
+*PATCH: меняем только заголовок*
+
+```ts
+const formData = new FormData();
+formData.append('title', 'Новый заголовок');
+
+await fetch('https://studapi.teachmeskills.by/blog/posts/1862/', {
+  method: 'PATCH',
+  headers: { Authorization: `Bearer ${localStorage.getItem('access')}` },
+  body: formData,
+});
+```
+
+> Почему `FormData`, а не JSON? Посмотрите в Swagger блок **Request body** у `PATCH /blog/posts/{id}/`: сервер принимает `multipart/form-data`. Формат тела всегда смотрим в документации.
+
+### Заголовки
+
+| Заголовок        | Где      | Зачем                                                         |
+| ---------------- | -------- | ------------------------------------------------------------- |
+| `Content-Type`   | запрос   | в каком формате тело: `application/json`, `multipart/form-data` |
+| `Accept`         | запрос   | в каком формате хотим ответ                                   |
+| `Authorization`  | запрос   | кто мы: `Bearer <access-токен>`                               |
+| `Content-Type`   | ответ    | в каком формате пришёл ответ                                  |
+| `Allow`          | ответ    | какие методы можно для этого адреса                           |
+
+Запрос со всеми частями на `fetch`:
+
+*fetch: логин*
+
+```ts
+const response = await fetch('https://studapi.teachmeskills.by/auth/jwt/create/', {
+  method: 'POST',                                     // метод
+  headers: { 'Content-Type': 'application/json' },   // заголовки
+  body: JSON.stringify({ email, password }),          // тело
+});
+
+const tokens = await response.json(); // { access, refresh }
+```
+
+> **Важно:** для `FormData` заголовок `Content-Type` **не ставим**. Браузер сам напишет `multipart/form-data; boundary=...`. Если указать руками — пропадёт `boundary`, и сервер не разберёт файл.
+
+> Все запросы видно в браузере: **F12 → Network**. Кликаем по запросу: **Headers** — метод, адрес, заголовки; **Payload** — тело и параметры; **Response** — что ответил сервер.
+
+---
+
+## 7.2. Коды ответа HTTP
+
+Первая строка ответа — **код** (статус). По первой цифре сразу понятно, что произошло:
+
+| Группа | Смысл                  | Кто виноват       |
+| ------ | ---------------------- | ----------------- |
+| `1xx`  | информационные         | — (не встречаем)  |
+| `2xx`  | успех                  | все молодцы       |
+| `3xx`  | перенаправление        | адрес поменялся   |
+| `4xx`  | ошибка **клиента**     | мы: не тот запрос |
+| `5xx`  | ошибка **сервера**     | бэкенд            |
+
+Коды, которые можно получить от нашего сервера (проверьте сами в Swagger или Postman):
+
+| Код   | Название              | Когда                                   | Пример                                                   |
+| ----- | --------------------- | --------------------------------------- | -------------------------------------------------------- |
+| `200` | OK                    | всё получилось, есть тело               | `GET /blog/posts/`                                       |
+| `201` | Created               | создали запись                          | частый ответ на `POST` в других API                      |
+| `204` | No Content            | получилось, тела нет                    | `DELETE /blog/posts/{id}/`, у нас и `POST /blog/posts/`  |
+| `301` | Moved Permanently     | адрес переехал                          | `GET /blog/posts` — без слеша в конце                    |
+| `400` | Bad Request           | неправильные данные                     | `POST /auth/jwt/create/` с пустым телом                  |
+| `401` | Unauthorized          | не знаем, кто вы                        | неверный пароль или истёк токен                          |
+| `403` | Forbidden             | знаем, кто вы, но нельзя                | например, изменить чужой пост                            |
+| `404` | Not Found             | такого нет                              | `GET /blog/posts/999999/`                                |
+| `500` | Internal Server Error | сервер сломался                         | не наша вина, но показать ошибку надо                    |
+
+Тело ошибки тоже полезно — сервер объясняет, что не так:
+
+*Ответы с ошибками*
+
+```json
+// 404  GET /blog/posts/999999/
+{ "detail": "Not found." }
+
+// 400  POST /auth/jwt/create/  с телом {}
+{ "email": ["This field is required."], "password": ["This field is required."] }
+
+// 401  POST /auth/jwt/create/  с неверным паролем
+{ "detail": "No active account found with the given credentials" }
+```
+
+> **Важно:** `fetch` **не считает ошибкой** ответы `4xx` и `5xx`. Промис отклоняется только если сети нет совсем. Код надо проверять самим:
+
+*fetch: проверяем код*
+
+```ts
+const response = await fetch('https://studapi.teachmeskills.by/blog/posts/999999/');
+
+console.log(response.status); // 404
+console.log(response.ok);     // false — но catch НЕ сработает
+
+if (!response.ok) {
+  throw new Error(`Ошибка ${response.status}`);
+}
+const post = await response.json();
+```
+
+Как реагировать в интерфейсе:
+
+| Код         | Что показываем                                    |
+| ----------- | ------------------------------------------------- |
+| `400`       | ошибки под полями формы (из тела ответа)          |
+| `401`       | отправляем на страницу логина                     |
+| `403`       | «Нет прав», прячем кнопку                         |
+| `404`       | «Пост не найден»                                  |
+| `5xx`, сеть | «Что-то пошло не так, попробуйте позже»           |
+
+---
+
+## 7.3. axios
+
+**axios** — библиотека для HTTP-запросов. Делает то же, что `fetch`, но удобнее:
+
+| Задача                       | `fetch`                                  | `axios`                                  |
+| ---------------------------- | ---------------------------------------- | ---------------------------------------- |
+| Разобрать JSON               | `await response.json()`                  | уже в `response.data`                    |
+| Отправить JSON               | `JSON.stringify` + заголовок             | просто объект: `axios.post(url, data)`   |
+| Ошибка на `4xx` / `5xx`      | нет, проверяем `response.ok`             | **да**, попадаем в `catch`               |
+| Query-параметры              | собираем строку руками                   | `{ params: { limit: 10 } }`              |
+| Общий адрес и заголовки      | пишем в каждом запросе                   | один раз в `axios.create`                |
+| Перехват всех запросов       | нет                                      | `interceptors`                           |
+
+### Устанавливаем
+
+*Терминал*
+
+```bash
+npm install axios
+```
+
+### Первый запрос
+
+```ts
+import axios from 'axios';
+
+const response = await axios.get('https://studapi.teachmeskills.by/blog/posts/', {
+  params: { limit: 2, search: 'react' }, // → ?limit=2&search=react
+});
+
+response.status;  // 200
+response.headers; // заголовки ответа
+response.data;    // { count: 17, next: '...', previous: null, results: [...] }
+```
+
+> `params` кодирует значения сам: `search: 'Основы'` превратится в `search=%D0%9E...`. Параметры со значением `undefined` в адрес не попадают.
+
+### Свой экземпляр с `baseURL`
+
+Чтобы не писать адрес сервера и токен в каждом запросе, создаём один настроенный экземпляр:
+
+`src/api/http.ts`
+
+```ts
+import axios from 'axios';
+
+export const http = axios.create({
+  baseURL: 'https://studapi.teachmeskills.by',
+  timeout: 10_000, // ждём ответ не дольше 10 секунд
+});
+
+// перед каждым запросом: если есть токен — добавляем заголовок
+http.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// после каждого ответа: общий обработчик ошибок
+http.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      localStorage.removeItem('access'); // токен протух — выкидываем
+    }
+    return Promise.reject(error); // ошибку отдаём дальше, в catch
+  },
+);
+```
+
+**Interceptor** («перехватчик») — функция, через которую проходит каждый запрос или ответ. Удобно для токена, логов и общей обработки ошибок.
+
+### Все запросы к постам в одном месте
+
+`src/api/posts.ts`
+
+```ts
+import { http } from './http';
+import type { Post } from '../types/post';
+
+// ответ любого списка с пагинацией
+export interface Paginated<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+// что можно передать в GET /blog/posts/
+export interface PostsParams {
+  limit?: number;
+  offset?: number;
+  search?: string;
+  ordering?: string;
+  author__course_group?: number;
+}
+
+export const postsService = {
+  getList: (params: PostsParams, signal?: AbortSignal) =>
+    http.get<Paginated<Post>>('/blog/posts/', { params, signal }).then((res) => res.data),
+
+  getById: (id: number) =>
+    http.get<Post>(`/blog/posts/${id}/`).then((res) => res.data),
+
+  create: (formData: FormData) =>
+    http.post('/blog/posts/', formData),
+
+  update: (id: number, formData: FormData) =>
+    http.patch<Post>(`/blog/posts/${id}/`, formData).then((res) => res.data),
+
+  remove: (id: number) =>
+    http.delete(`/blog/posts/${id}/`),
+};
+```
+
+`http.get<Paginated<Post>>` — подсказываем TypeScript, что лежит в `res.data`.
+
+### Обработка ошибок
+
+```ts
+import axios from 'axios';
+
+try {
+  const post = await postsService.getById(999999);
+} catch (error) {
+  if (axios.isAxiosError(error)) {
+    error.response?.status; // 404
+    error.response?.data;   // { detail: 'Not found.' }
+    // error.response нет — значит, сервер не ответил (нет сети, таймаут)
+  }
+}
+```
+
+---
+
+## 7.4. Инструменты: Swagger и Postman
+
+Прежде чем писать код, запрос надо **попробовать руками**: какие параметры, что приходит в ответ, какие ошибки. Для этого два инструмента.
+
+### Swagger
+
+Открываем [Swagger нашего API](https://studapi.teachmeskills.by/api/schema/swagger-ui/#/blog/blog_posts_retrieve) — ссылка ведёт сразу на `GET /blog/posts/{id}/`.
+
+1. Раскрываем блок **GET /blog/posts/{id}/**.
+2. Жмём **Try it out**, в поле `id` пишем `1862`.
+3. Жмём **Execute**.
+4. Смотрим ниже:
+   - **Curl** — тот же запрос командой для терминала;
+   - **Request URL** — точный адрес, который ушёл на сервер;
+   - **Server response** — код (`200`), тело и заголовки ответа.
+5. Пробуем `id` = `999999` — видим `404` и `{ "detail": "Not found." }`.
+
+Что ещё есть в Swagger:
+
+- **Parameters** — какие query-параметры принимает адрес. У `GET /blog/posts/` это `limit`, `offset`, `search`, `ordering`, `author__course_group`.
+- **Request body** — что и в каком формате отправлять (для `POST`, `PATCH`).
+- **Responses** — какие коды и тела возможны.
+- **Schemas** (внизу страницы) — все типы: какие поля у `Post`, какие обязательные, ограничения (`title` — до 250 символов, `text` — от 200).
+- Кнопка **Authorize** (замок справа вверху) — вставляем `access`-токен без слова `Bearer`, и все запросы пойдут с авторизацией.
+
+### Postman
+
+[Postman](https://www.postman.com/downloads/) — программа для отправки запросов. В отличие от Swagger, запросы в ней **сохраняются**, их можно собрать в коллекцию и передать коллеге.
+
+**Запрос на список постов:**
+
+1. **New → HTTP**, метод `GET`, адрес `https://studapi.teachmeskills.by/blog/posts/`.
+2. Вкладка **Params**: `limit` = `5`, `search` = `react`, `ordering` = `-date`. Postman сам допишет их в адрес.
+3. **Send**. Внизу — тело ответа, код `200 OK`, время и размер, вкладка **Headers**.
+
+**Логин и токен:**
+
+1. `POST https://studapi.teachmeskills.by/auth/jwt/create/`
+2. **Body → raw → JSON**:
+
+```json
+{ "email": "you@mail.com", "password": "your-password" }
+```
+
+3. **Send** — в ответе `access` и `refresh`.
+4. Чтобы не копировать токен руками, во вкладке **Scripts → Post-response** пишем:
+
+```js
+pm.environment.set('access', pm.response.json().access);
+```
+
+5. В других запросах: вкладка **Authorization → Bearer Token**, значение `{{access}}`.
+
+**Переменные окружения.** Создаём **Environment** с переменной `baseUrl` = `https://studapi.teachmeskills.by` и пишем адреса как `{{baseUrl}}/blog/posts/`. Поменялся сервер — меняем одну переменную.
+
+**Импорт всего API.** **Import** → вставляем `https://studapi.teachmeskills.by/api/schema/?format=json` → Postman сам создаст коллекцию со всеми запросами из Swagger.
+
+| Инструмент | Когда удобен                                                              |
+| ---------- | ------------------------------------------------------------------------- |
+| Swagger    | быстро посмотреть документацию и попробовать запрос, ничего не ставя       |
+| Postman    | сохранить запросы, переменные, токен; повторять одно и то же много раз    |
+| Network    | посмотреть, что **на самом деле** отправляет наш фронтенд                 |
+
+---
+
+## 7.5. Получаем данные с API
+
+Соберём хук, который грузит посты через axios. Он показывает всё, что нужно при загрузке данных: состояние загрузки, ошибку и отмену старого запроса.
+
+`src/hooks/usePosts.ts`
+
+```ts
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { postsService, type Paginated, type PostsParams } from '../api/posts';
+import type { Post } from '../types/post';
+
+export const usePosts = (params: PostsParams) => {
+  const [data, setData] = useState<Paginated<Post> | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // объект params новый на каждой отрисовке — в зависимости кладём примитивы
+  const { limit, offset, search, ordering, author__course_group } = params;
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setIsLoading(true);
+    setError(null);
+
+    postsService
+      .getList({ limit, offset, search, ordering, author__course_group }, controller.signal)
+      .then(setData)
+      .catch((err) => {
+        if (axios.isCancel(err)) return; // запрос отменили сами — это не ошибка
+        setError(axios.isAxiosError(err) ? `Ошибка ${err.response?.status ?? 'сети'}` : 'Что-то пошло не так');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setIsLoading(false);
+      });
+
+    // параметры поменялись или ушли со страницы — отменяем старый запрос
+    return () => controller.abort();
+  }, [limit, offset, search, ordering, author__course_group]);
+
+  return { data, isLoading, error };
+};
+```
+
+Использование:
+
+```tsx
+const { data, isLoading, error } = usePosts({ limit: 10, ordering: '-date' });
+
+if (isLoading) return <Skeleton height={300} />;
+if (error) return <Alert severity="error">{error}</Alert>;
+
+return data?.results.map((post) => <Card key={post.id} postData={post} />);
+```
+
+Зачем `AbortController`: пользователь быстро печатает «r», «re», «rea»… — уходят три запроса. Ответы могут прийти **в любом порядке**, и на экране окажется результат для «re». Отмена старого запроса это исключает.
+
+### А как же RTK Query?
+
+В нашем проекте посты уже грузит RTK Query (глава 6) — он делает всё то же самое: загрузка, ошибки, отмена, плюс кэш. Тот же запрос — одна строка:
+
+```tsx
+const { data, isLoading, isError } = useBlogPostsListQuery({ limit: 10, ordering: '-date' });
+```
+
+| Когда                                          | Чем грузим                    |
+| ---------------------------------------------- | ----------------------------- |
+| Проект с Redux Toolkit (наш блог)              | RTK Query                     |
+| Проект без Redux, простой запрос               | axios + `useEffect`           |
+| Код не в компоненте (скрипт, утилита)          | axios / `fetch`               |
+
+Можно и совместить: RTK Query будет отправлять запросы **через наш axios-экземпляр** с его interceptors. Для этого заменяем `fetchBaseQuery` на свою функцию:
+
+`src/store/api/axiosBaseQuery.ts`
+
+```ts
+import type { BaseQueryFn } from '@reduxjs/toolkit/query';
+import axios, { type AxiosRequestConfig } from 'axios';
+import { http } from '../../api/http';
+
+type Args = {
+  url: string;
+  method?: AxiosRequestConfig['method'];
+  body?: unknown;
+  params?: AxiosRequestConfig['params'];
+};
+
+type ApiError = { status?: number; data?: unknown };
+
+export const axiosBaseQuery: BaseQueryFn<Args, unknown, ApiError> = async ({ url, method = 'GET', body, params }) => {
+  try {
+    const res = await http({ url, method, data: body, params });
+    return { data: res.data };
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      return { error: { status: err.response?.status, data: err.response?.data } };
+    }
+    return { error: { data: String(err) } };
+  }
+};
+```
+
+`src/store/api/baseApi.ts`
+
+```ts
+export const baseApi = createApi({
+  reducerPath: 'api',
+  baseQuery: axiosBaseQuery, // вместо fetchBaseQuery({ baseUrl, prepareHeaders })
+  tagTypes: ['blog'],
+  endpoints: () => ({}),
+});
+```
+
+Сгенерированный `blogApi.generated.ts` менять не надо: он передаёт `url`, `method`, `body`, `params` — ровно то, что принимает `axiosBaseQuery`.
+
+---
+
+## 7.6. Поиск, фильтр, сортировка
+
+На сервере **1418 постов**, а к нам приходит страница из 10. Если фильтровать массив на фронтенде, найдём только среди этих 10. Поэтому искать, фильтровать и сортировать просим **сервер** — через query-параметры.
+
+| Операция     | Параметр               | Пример                       | Что вернёт                                    |
+| ------------ | ---------------------- | ---------------------------- | --------------------------------------------- |
+| Поиск        | `search`               | `?search=react`              | посты, где в заголовке или тексте есть «react» (17 шт.) |
+| Фильтр       | `author__course_group` | `?author__course_group=1`    | посты авторов из группы с `id = 1` (8 шт.)    |
+| Сортировка   | `ordering`             | `?ordering=-date`            | сначала новые                                 |
+
+Параметры комбинируются:
+
+```none
+/blog/posts/?search=react&author__course_group=1&ordering=-date&limit=10&offset=0
+```
+
+### Сортировка: `ordering`
+
+Пишем имя поля. Минус впереди — по убыванию.
+
+| Значение        | Порядок                       |
+| --------------- | ----------------------------- |
+| `date`          | сначала старые                |
+| `-date`         | сначала новые                 |
+| `title`         | по названию А → Я             |
+| `-title`        | по названию Я → А             |
+| `lesson_num`    | по номеру урока, по возрастанию |
+| `-lesson_num`   | по номеру урока, по убыванию  |
+
+> Неизвестное поле (`?ordering=foo`) сервер **молча игнорирует** и отдаёт посты в обычном порядке. Ошибки не будет — если сортировка «не работает», проверьте имя поля.
+
+### Фильтр по группе: `author__course_group`
+
+Список групп берём с сервера: `GET /blog/groups/` → `{ id, name }`. `id` группы передаём в фильтр.
+
+```json
+{ "count": 20, "results": [{ "id": 1, "name": "JS 1" }, { "id": 2, "name": "JS TEST 2" }, ...] }
+```
+
+### Один и тот же запрос тремя способами
+
+```ts
+// 1. fetch — строку собираем сами, кириллицу кодируем
+const search = encodeURIComponent('Основы');
+fetch(`https://studapi.teachmeskills.by/blog/posts/?search=${search}&ordering=-date`);
+
+// 2. axios — объектом, кодирует сам
+http.get('/blog/posts/', { params: { search: 'Основы', ordering: '-date' } });
+
+// 3. RTK Query (сгенерированный хук) — имена в camelCase!
+useBlogPostsListQuery({ search: 'Основы', ordering: '-date', authorCourseGroup: 1 });
+```
+
+> В проекте уже есть помощник `buildQs` (`src/shared/build-qs.ts`): `buildQs('/blog/posts/', { search: 'Основы', limit: 10 })` → `/blog/posts/?search=%D0%9E...&limit=10`. Пустые `null` / `undefined` выкидывает сам.
+
+### Поиск без лишних запросов: debounce
+
+Если отправлять запрос на каждую букву, слово «react» — это 5 запросов. **Debounce** («подождать, пока успокоится»): запрос уходит, только когда пользователь перестал печатать на 500 мс.
+
+`src/hooks/useDebounce.ts`
+
+```ts
+import { useEffect, useState } from 'react';
+
+// возвращает value, но только после того, как оно delay мс не менялось
+export const useDebounce = <T>(value: T, delay = 500): T => {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    // value поменялось раньше — старый таймер отменяем
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  return debounced;
+};
+```
+
+```tsx
+const [search, setSearch] = useState('');
+const debouncedSearch = useDebounce(search, 500);
+
+// в поле — search (меняется сразу), в запрос — debouncedSearch
+useBlogPostsListQuery({ search: debouncedSearch || undefined });
+```
+
+---
+
+## 7.7. Пагинация
+
+Отдать все 1418 постов разом — долго и тяжело. Сервер отдаёт их **страницами**. У нас пагинация через `limit` и `offset`:
+
+- `limit` — сколько постов на странице;
+- `offset` — сколько постов пропустить с начала.
+
+| Страница | `limit` | `offset` | Какие посты  |
+| -------- | ------- | -------- | ------------ |
+| 1        | 10      | 0        | 1–10         |
+| 2        | 10      | 10       | 11–20        |
+| 3        | 10      | 20       | 21–30        |
+| *N*      | 10      | (N − 1) × 10 |          |
+
+В ответе сервер подсказывает, что дальше:
+
+```json
+{
+  "count": 1418,
+  "next": "http://studapi.teachmeskills.by/blog/posts/?limit=10&offset=20",
+  "previous": "http://studapi.teachmeskills.by/blog/posts/?limit=10",
+  "results": [ ... 10 постов ... ]
+}
+```
+
+| Поле       | Что это                                        |
+| ---------- | ---------------------------------------------- |
+| `count`    | сколько **всего** постов (с учётом поиска и фильтра) |
+| `next`     | адрес следующей страницы, `null` — это последняя |
+| `previous` | адрес предыдущей, `null` — это первая          |
+| `results`  | посты текущей страницы                         |
+
+Две формулы, которые нужны всегда:
+
+```ts
+const offset = (page - 1) * LIMIT;                  // номер страницы → offset
+const pageCount = Math.ceil(count / LIMIT);          // сколько всего страниц: 1418 / 10 → 142
+```
+
+Проверьте последнюю страницу: `?limit=2&offset=1416` — придут 2 поста и `"next": null`.
+
+> **Важно:** изменили поиск, фильтр или сортировку — **сбрасываем страницу на первую**. Иначе можно остаться на 50-й странице, когда по новому поиску постов всего 17.
+
+Для страниц в MUI есть готовый компонент:
+
+```tsx
+import { Pagination } from '@mui/material';
+
+<Pagination
+  count={pageCount}                         // сколько всего страниц
+  page={page}                               // текущая (с 1)
+  onChange={(_, value) => setPage(value)}   // value — номер новой страницы
+/>
+```
+
+---
+
+## 7.8. Собираем страницу постов
+
+Соберём всё вместе на `/posts`: поиск, фильтр по группе, сортировка и страницы.
+
+Где хранить фильтры? В `useState` они пропадут при перезагрузке, а ссылку на «вторую страницу поиска react» не отправить другу. Поэтому храним их **в адресе**: `/posts?search=react&group=1&ordering=-date&page=2`. Читаем и пишем через `useSearchParams` из `react-router`.
+
+`src/pages/PostsPage/PostsPage.tsx`
+
+```tsx
+import { useSearchParams } from 'react-router';
+import {
+  Alert, Box, FormControl, InputLabel, MenuItem, Pagination,
+  Select, Skeleton, Stack, TextField, Typography,
+} from '@mui/material';
+import { Card } from '../../components/Card/Card';
+import {
+  useBlogGroupsListQuery,
+  useBlogPostsListQuery,
+} from '../../store/api/blogApi.generated';
+import { useDebounce } from '../../hooks/useDebounce';
+
+const LIMIT = 10;
+
+const SORT_OPTIONS = [
+  { value: '-date', label: 'Сначала новые' },
+  { value: 'date', label: 'Сначала старые' },
+  { value: 'title', label: 'По названию' },
+  { value: '-lesson_num', label: 'По номеру урока' },
+];
+
+export const PostsPage = () => {
+  // всё состояние фильтров живёт в адресе: /posts?search=react&group=1&ordering=-date&page=2
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const search = searchParams.get('search') ?? '';
+  const group = searchParams.get('group') ?? '';           // '' — все группы
+  const ordering = searchParams.get('ordering') ?? '-date';
+  const page = Number(searchParams.get('page') ?? 1);
+
+  // в поле текст меняется сразу, а запрос уходит через 500 мс после последней буквы
+  const debouncedSearch = useDebounce(search, 500);
+
+  // меняем часть параметров, остальные оставляем как есть
+  const updateParams = (changes: Record<string, string>) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        Object.entries(changes).forEach(([key, value]) => {
+          if (value) next.set(key, value);
+          else next.delete(key); // пустое значение — убираем из адреса
+        });
+        return next;
+      },
+      { replace: true }, // не засоряем историю каждой буквой
+    );
+  };
+
+  // любой фильтр меняет набор постов → возвращаемся на 1-ю страницу
+  const changeFilter = (key: string, value: string) => updateParams({ [key]: value, page: '' });
+
+  const { data, isLoading, isFetching, isError } = useBlogPostsListQuery({
+    limit: LIMIT,
+    offset: (page - 1) * LIMIT,
+    search: debouncedSearch || undefined,
+    ordering,
+    authorCourseGroup: group ? Number(group) : undefined,
+  });
+
+  const { data: groups } = useBlogGroupsListQuery({ limit: 100 });
+
+  const posts = data?.results ?? [];
+  const pageCount = Math.ceil((data?.count ?? 0) / LIMIT);
+
+  return (
+    <Stack spacing={2}>
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+        <TextField
+          label="Поиск"
+          value={search}
+          onChange={(e) => changeFilter('search', e.target.value)}
+          fullWidth
+        />
+
+        <FormControl sx={{ minWidth: 180 }}>
+          <InputLabel id="group-label">Группа</InputLabel>
+          <Select
+            labelId="group-label"
+            label="Группа"
+            value={group}
+            onChange={(e) => changeFilter('group', e.target.value)}
+          >
+            <MenuItem value="">Все группы</MenuItem>
+            {groups?.results?.map((g) => (
+              <MenuItem key={g.id} value={String(g.id)}>{g.name}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl sx={{ minWidth: 200 }}>
+          <InputLabel id="sort-label">Сортировка</InputLabel>
+          <Select
+            labelId="sort-label"
+            label="Сортировка"
+            value={ordering}
+            onChange={(e) => changeFilter('ordering', e.target.value)}
+          >
+            {SORT_OPTIONS.map((o) => (
+              <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Stack>
+
+      <Typography color="text.secondary">Найдено: {data?.count ?? 0}</Typography>
+
+      {isError && <Alert severity="error">Не удалось загрузить посты</Alert>}
+
+      {isLoading ? (
+        <Skeleton height={300} />
+      ) : (
+        // старые посты видны, пока грузятся новые, — просто делаем их бледнее
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, opacity: isFetching ? 0.5 : 1 }}>
+          {posts.map((post) => (
+            <Card key={post.id} postData={post} variant="search" />
+          ))}
+          {!isFetching && posts.length === 0 && <Typography>Ничего не найдено</Typography>}
+        </Box>
+      )}
+
+      {pageCount > 1 && (
+        <Pagination
+          count={pageCount}
+          page={page}
+          onChange={(_, value) => {
+            updateParams({ page: value === 1 ? '' : String(value) });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
+      )}
+    </Stack>
+  );
+};
+```
+
+Что здесь важно:
+
+1. **Фильтры в URL.** Перезагрузили страницу или отправили ссылку — фильтры и страница на месте. Кнопка «Назад» браузера тоже работает.
+2. **`changeFilter` сбрасывает `page`.** Поменяли поиск — снова первая страница.
+3. **`isLoading` vs `isFetching`.** `isLoading` — только самая первая загрузка (показываем скелетон). `isFetching` — любой запрос, в том числе при смене страницы. Пока он идёт, в `data` лежат **старые** посты — показываем их бледными, а не пустой экран.
+4. **Кэш.** Вернулись на страницу 1 после страницы 2 — RTK Query отдаст её из кэша без запроса.
+5. **Имена параметров.** В URL сайта — короткие `group`, `page`; в запросе к серверу — `authorCourseGroup`, `offset`. Это разные вещи: адрес нашего сайта мы придумываем сами.
+
+---
+
+## 7.9. Проверяем
+
+1. Открываем `/posts`. В **Network** — запрос `posts/?limit=10&offset=0&ordering=-date`, внизу пагинация на 142 страницы.
+2. Печатаем в поиск «react» — запрос уходит **один**, через полсекунды после последней буквы. «Найдено: 17», страниц — 2.
+3. Выбираем группу — в запросе появился `author__course_group=...`, адрес сайта стал `/posts?search=react&group=1`.
+4. Переключаем сортировку — порядок постов меняется, в запросе `ordering=...`.
+5. Жмём страницу 3 — в запросе `offset=20`. Возвращаемся на 1 — запроса нет, сработал кэш.
+6. Перезагружаем страницу (F5) — фильтры и номер страницы остались.
+7. Тот же запрос повторяем в Swagger и Postman — ответы совпадают.
+
+---
+
+## 7.10. Практика: активация аккаунта
+
+После регистрации (`POST /auth/users/`) аккаунт **не активен**: войти нельзя. Сервер отправляет на почту ссылку вида:
+
+```none
+http://studapi.teachmeskills.by//activate/Ng/atj1td-0c06a11c61dc8b14966eb7abb176cb9e
+                                 └──┬───┘ └┬┘ └──────────────┬──────────────────┘
+                                  путь    uid               token
+```
+
+Сама по себе ссылка ничего не делает. Нам нужна страница по этому адресу, которая возьмёт `uid` и `token` из URL и отправит их на сервер — [POST /auth/users/activation/](https://studapi.teachmeskills.by/api/schema/swagger-ui/#/auth/auth_users_activation_create).
+
+| Ответ | Что значит                                   | Что показываем                         |
+| ----- | -------------------------------------------- | -------------------------------------- |
+| `204` | аккаунт активирован                          | «Аккаунт активирован!»                 |
+| `400` | неверный `uid` или `token`                   | «Ссылка недействительна»               |
+| `403` | ссылка уже использована, аккаунт активен     | «Аккаунт уже активирован»              |
+| `5xx`, сеть | сервер недоступен                      | «Попробуйте позже»                     |
+
+План:
+
+1. Получить хук запроса из Swagger через генератор.
+2. Добавить роут `/activate/:uid/:token`.
+3. На странице в `useEffect` отправить запрос и показать результат.
+
+### Хук запроса из Swagger
+
+Отдельный slice или thunk не нужен: запрос к серверу — работа RTK Query (глава 6). Адрес есть в Swagger, значит хук сгенерируем. Добавляем его в фильтр генератора:
+
+`openapi-config.ts`
+
+```ts
+// берём только нужное: посты, группы, логин и активацию
+filterEndpoints: [/^blog/, /^authJwt/, /^authUsersActivation/],
+```
+
+*Терминал*
+
+```bash
+npm run api:generate
+```
+
+В `blogApi.generated.ts` появился эндпоинт и хук:
+
+`src/store/api/blogApi.generated.ts`
+
+```ts
+authUsersActivationCreate: build.mutation<
+  AuthUsersActivationCreateApiResponse,
+  AuthUsersActivationCreateApiArg
+>({
+  query: (queryArg) => ({
+    url: `/auth/users/activation/`,
+    method: "POST",
+    body: queryArg.activationRequest,
+  }),
+  invalidatesTags: ["auth"],
+}),
+
+// ...
+export type AuthUsersActivationCreateApiArg = {
+  activationRequest: ActivationRequest; // { uid: string; token: string }
+};
+// ...
+export const { /* ... */ useAuthUsersActivationCreateMutation } = injectedRtkApi;
+```
+
+Это `POST`, поэтому генератор сделал **mutation**: хук не запускается сам, а возвращает функцию `activate`, которую мы вызываем, когда нужно.
+
+### Роут
+
+`src/paths.ts`
+
+```ts
+export const PATHS = {
+  // ...
+  activate: (uid: string, token: string) => `/activate/${uid}/${token}`,
+};
+```
+
+`src/App.tsx`
+
+```tsx
+import { ActivatePage } from './pages/ActivatePage/ActivatePage';
+
+// внутри <Route element={<Layout />}>, НЕ внутри ProtectedRoute:
+// по ссылке из письма приходит ещё не залогиненный пользователь
+<Route path={PATHS.activate(':uid', ':token')} element={<ActivatePage />} />
+```
+
+В письме адрес с **двойным слешем**: `//activate/...`. Роутер такой путь не узнает и покажет 404. Убираем лишние слеши до запуска приложения:
+
+`src/main.tsx`
+
+```tsx
+// В письме ссылка с двойным слешем: //activate/uid/token — роутер такой адрес не узнаёт.
+// Убираем лишние слеши в начале до старта приложения.
+if (window.location.pathname.startsWith('//')) {
+  const { pathname, search, hash } = window.location;
+  window.history.replaceState(null, '', pathname.replace(/^\/+/, '/') + search + hash);
+}
+
+createRoot(document.getElementById('root')!).render(
+  // ...
+);
+```
+
+### Страница
+
+`src/pages/ActivatePage/ActivatePage.tsx`
+
+```tsx
+import { useEffect, useRef } from 'react';
+import { Link, useParams } from 'react-router';
+import { Alert, Box, Button, CircularProgress, Typography } from '@mui/material';
+import { useAuthUsersActivationCreateMutation } from '../../store/api/blogApi.generated';
+
+// текст ошибки по коду ответа сервера
+const getErrorMessage = (error: unknown) => {
+  const status = (error as { status?: number | string } | undefined)?.status;
+
+  if (status === 403) return 'Аккаунт уже активирован. Можно войти.';
+  if (status === 400) return 'Ссылка активации недействительна или повреждена.';
+  if (status === 'FETCH_ERROR') return 'Нет соединения с сервером. Попробуйте позже.';
+  return 'Не удалось активировать аккаунт. Попробуйте позже.';
+};
+
+// /activate/:uid/:token — сюда ведёт ссылка из письма после регистрации
+export const ActivatePage = () => {
+  const { uid, token } = useParams();
+
+  // POST /auth/users/activation/  { uid, token }
+  const [activate, { isUninitialized, isLoading, isSuccess, isError, error }] =
+    useAuthUsersActivationCreateMutation();
+
+  // StrictMode в разработке запускает useEffect дважды.
+  // Второй запрос с тем же токеном сервер отклонит (403), поэтому шлём только один раз.
+  const isSent = useRef(false);
+
+  // при загрузке страницы отправляем uid и token из адреса на бэкенд
+  useEffect(() => {
+    if (!uid || !token || isSent.current) return;
+    isSent.current = true;
+    activate({ activationRequest: { uid, token } });
+  }, [activate, uid, token]);
+
+  if (!uid || !token) {
+    return <Alert severity="error">В ссылке нет данных для активации.</Alert>;
+  }
+
+  // 403 — ссылку уже открывали, аккаунт активен: это не страшная ошибка
+  const isAlreadyActive = isError && (error as { status?: number }).status === 403;
+
+  return (
+    <Box sx={{ display: 'grid', gap: 2, justifyItems: 'start', py: 2 }}>
+      <Typography variant="h4">Активация аккаунта</Typography>
+
+      {(isUninitialized || isLoading) && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <CircularProgress size={24} />
+          <Typography>Активируем аккаунт…</Typography>
+        </Box>
+      )}
+
+      {isSuccess && <Alert severity="success">Аккаунт активирован! Теперь можно войти.</Alert>}
+
+      {isError && (
+        <Alert severity={isAlreadyActive ? 'info' : 'error'}>{getErrorMessage(error)}</Alert>
+      )}
+
+      {(isSuccess || isError) && (
+        <Button component={Link} to="/" variant="contained">На главную</Button>
+      )}
+    </Box>
+  );
+};
+```
+
+Что здесь важно:
+
+1. **Флаги mutation** заменяют свой `status`: `isUninitialized` — запрос ещё не отправляли, `isLoading` — идёт, `isSuccess` — `204`, `isError` — любой другой код.
+2. **`error.status`** — код ответа сервера (`400`, `403`), а в `error.data` — тело ошибки, например `{ "token": ["Invalid token for given user."] }`. Если сервер вообще не ответил, `status` будет строкой `'FETCH_ERROR'`.
+3. **`useRef` от двойного запроса.** В режиме разработки `StrictMode` вызывает `useEffect` дважды (3.4). Query RTK Query сам склеивает одинаковые запросы, а mutation — нет: каждый вызов `activate` — новый `POST`. Второй запрос с тем же токеном сервер отклонит с `403`, и пользователь увидит «Уже активирован» вместо «Активирован!». `ref` переживает повторный запуск эффекта, поэтому запрос уходит один.
+4. **`403` показываем как `info`, а не `error`**: аккаунт активен, пользователю можно просто войти.
+
+Поток данных целиком:
+
+```none
+/activate/Ng/atj1td-...  →  useParams() → { uid, token }
+        ↓ useEffect
+activate({ activationRequest: { uid, token } })     isLoading  → спиннер
+        ↓
+POST /auth/users/activation/
+        ↓ 204 → isSuccess                           → «Аккаунт активирован!»
+        ↓ 403 → isError, error.status === 403       → «Уже активирован»
+        ↓ 400 → isError, error.status === 400       → «Ссылка недействительна»
+```
+
+### Проверяем
+
+1. Регистрируемся: в Swagger `POST /auth/users/` с `username`, `email`, `password`, `course_group`.
+2. Открываем письмо и меняем в ссылке домен на свой dev-сервер: `http://localhost:5173//activate/<uid>/<token>`.
+3. Видим спиннер, затем «Аккаунт активирован!». В **Network** — запрос `activation/` **один**, ответ `204`. В Redux DevTools — `api/executeMutation/pending` → `fulfilled`.
+4. Обновляем страницу (F5) — теперь `403` и «Аккаунт уже активирован».
+5. Портим токен в адресе — `400` и «Ссылка недействительна».
+6. Логинимся этим аккаунтом через `POST /auth/jwt/create/` — получаем токены.
+
+> На почту приходит адрес `studapi.teachmeskills.by`, а не наш сайт: это домен, настроенный на сервере. При разработке подставляем `localhost` руками. У Vite порт по умолчанию `5173`, а не `3000`.
+
+---
+
+## 7.11. Частые ошибки
+
+- **Фильтруем на фронтенде** через `posts.filter(...)` — ищем только среди 10 загруженных постов, а не среди всех 1418. Поиск и фильтр — параметрами запроса.
+- **Ждём, что `fetch` упадёт на `404`** — не упадёт. Проверяйте `response.ok`. axios и RTK Query ошибку дают сами.
+- **Не сбросили страницу после смены фильтра** — остались на странице 50, а постов по запросу 17: пустой экран.
+- **Перепутали `offset` и номер страницы**: `offset: page` вместо `offset: (page - 1) * LIMIT`.
+- **Запрос на каждую букву** — нет debounce. Сервер получает лишнюю нагрузку, ответы приходят вперемешку.
+- **В зависимостях `useEffect` объект `params`** — он новый на каждой отрисовке, запросы идут бесконечно. Кладите в зависимости примитивы.
+- **Нет отмены запроса** — при быстром вводе на экране остаётся ответ на старый поиск. Используйте `AbortController` (или RTK Query — он делает это сам).
+- **`Content-Type: multipart/form-data` руками** для `FormData` — пропадает `boundary`, сервер не видит файл. Не указывайте его: браузер и axios поставят сами.
+- **Кириллица в адресе без кодирования** — собирая строку руками, оборачивайте значения в `encodeURIComponent` или используйте `params` / `buildQs`.
+- **`ordering` с опечаткой** — сервер молча игнорирует неизвестное поле, ошибки не будет, просто порядок не тот.
+- **Сгенерированному хуку передали `author__course_group`** — у него имя `authorCourseGroup`. Имена параметров хука смотрите в `blogApi.generated.ts`.
+- **Токен в Swagger со словом `Bearer`** — в окно **Authorize** вставляем только сам токен, `Bearer` Swagger добавит сам.
+- **Запрос активации ушёл дважды** — `StrictMode` вызывает `useEffect` два раза, а mutation, в отличие от query, запросы не склеивает. Второй `POST` получает `403`. Защищаемся `useRef` (7.10).
+- **Ждём, что mutation запустится сама** — хук `useXxxMutation` только возвращает функцию, её надо вызвать в `useEffect` или обработчике.
+- **Страница активации внутри `ProtectedRoute`** — по ссылке из письма приходит незалогиненный пользователь, и его не пустит.

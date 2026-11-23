@@ -7,4 +7,5 @@ export const PATHS = {
   posts: () => '/posts',
   post: (id: string) => buildQs(`/posts/${id}`),
   notFound: () => '/not-found',
+  activate: (uid: string, token: string) => `/activate/${uid}/${token}`,
 }

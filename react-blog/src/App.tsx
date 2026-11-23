@@ -8,6 +8,7 @@ import { PostPage } from './pages/PostPage/PostPage';
 import { PATHS } from './paths';
 import { ProtectedRoute } from './components/ProtectedRoute/ProtectedRoute';
 import { useAuth } from './context/AuthContext';
+import { ActivatePage } from './pages/ActivatePage';
 
 function App() {
   const { isAuth } = useAuth()
@@ -30,7 +31,8 @@ function App() {
           <Route path={PATHS.card(':id')} element={<PostPage />} />
         </Route>
 
-       
+        <Route path={PATHS.activate(':uid', ':token')} element={<ActivatePage />} />
+        
         <Route path="*" element={<NotFoundPage />} /> 
       </Route>
     </Routes>

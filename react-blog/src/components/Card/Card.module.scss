@@ -2,7 +2,6 @@
   border: 1px solid ;
   border-radius: 20px;
   min-width: 100px;
-  max-width: 600px;
 
   padding: 12px;
 
@@ -25,7 +24,7 @@
   }
 
   &_medium {
-    max-width: 460px;
+    // max-width: 460px;
 
     .cardContent {
        display: flex;
@@ -43,8 +42,8 @@
     }
   }
 
-  &_small {
-    max-width: 320px;
+  // &_small {
+  //   // max-width: 320px;
 
-  }
+  // }
 }

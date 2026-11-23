@@ -39,6 +39,17 @@ const injectedRtkApi = api
         }),
         invalidatesTags: ["auth"],
       }),
+      authUsersActivationCreate: build.mutation<
+        AuthUsersActivationCreateApiResponse,
+        AuthUsersActivationCreateApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/auth/users/activation/`,
+          method: "POST",
+          body: queryArg.activationRequest,
+        }),
+        invalidatesTags: ["auth"],
+      }),
       blogGroupsList: build.query<
         BlogGroupsListApiResponse,
         BlogGroupsListApiArg
@@ -155,6 +166,11 @@ export type AuthJwtVerifyCreateApiResponse = /** status 200  */ TokenVerify;
 export type AuthJwtVerifyCreateApiArg = {
   tokenVerifyRequest: TokenVerifyRequest;
 };
+export type AuthUsersActivationCreateApiResponse =
+  /** status 200  */ Activation;
+export type AuthUsersActivationCreateApiArg = {
+  activationRequest: ActivationRequest;
+};
 export type BlogGroupsListApiResponse =
   /** status 200  */ PaginatedGroupListRead;
 export type BlogGroupsListApiArg = {
@@ -238,6 +254,14 @@ export type TokenVerify = {
 export type TokenVerifyRequest = {
   token: string;
 };
+export type Activation = {
+  uid: string;
+  token: string;
+};
+export type ActivationRequest = {
+  uid: string;
+  token: string;
+};
 export type Group = {
   name: string;
 };
@@ -317,6 +341,7 @@ export const {
   useAuthJwtCreateCreateMutation,
   useAuthJwtRefreshCreateMutation,
   useAuthJwtVerifyCreateMutation,
+  useAuthUsersActivationCreateMutation,
   useBlogGroupsListQuery,
   useBlogGroupsRetrieveQuery,
   useBlogPostsListQuery,
