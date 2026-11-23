@@ -37,7 +37,7 @@ export const LargePost = ({ post, variant }: PostCardProps) => {
 
                 {image && (
                     <img 
-                        src={image} 
+                        src={'https://static.photos/science/1024x576/133'}
                         alt={title} 
                         className={`${styles.image} ${styles[variant]}`} 
                     />
