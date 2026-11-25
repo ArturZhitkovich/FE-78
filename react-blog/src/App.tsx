@@ -9,6 +9,8 @@ import { PATHS } from './paths';
 import { ProtectedRoute } from './components/ProtectedRoute/ProtectedRoute';
 import { useAuth } from './context/AuthContext';
 import { ActivatePage } from './pages/ActivatePage';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
 
 function App() {
   const { isAuth } = useAuth()
@@ -30,6 +32,9 @@ function App() {
           <Route path={PATHS.cards()} element={<PostsPage />} />
           <Route path={PATHS.card(':id')} element={<PostPage />} />
         </Route>
+
+        <Route path={PATHS.login()} element={<LoginPage />} />
+        <Route path={PATHS.register()} element={<RegisterPage />} />
 
         <Route path={PATHS.activate(':uid', ':token')} element={<ActivatePage />} />
         

@@ -8,4 +8,7 @@ export const PATHS = {
   post: (id: string) => buildQs(`/posts/${id}`),
   notFound: () => '/not-found',
   activate: (uid: string, token: string) => `/activate/${uid}/${token}`,
+
+  login: () => '/login',
+  register: () => '/register'
 }

@@ -17,8 +17,9 @@ const config: ConfigFile = {
   // проставить providesTags / invalidatesTags по разделам Swagger
   tag: true,
 
-  // берём только нужное: посты, группы, логин и активацию
-  filterEndpoints: [/^blog/, /^authJwt/, /^authUsersActivation/],
+  // берём только нужное: посты, группы, логин и всё про пользователей
+  // (/^authUsers/ — регистрация, активация, повторное письмо, me, смена пароля…)
+  filterEndpoints: [/^blog/, /^authJwt/, /^authUsers/],
 }
 
 export default config;

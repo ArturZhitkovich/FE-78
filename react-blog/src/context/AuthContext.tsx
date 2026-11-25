@@ -1,54 +1,49 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { AUTH_CHANGE_EVENT, tokens } from '../shared/tokens';
+import { isTokenExpired } from '../shared/jwt';
 
 interface AuthContextType {
   isAuth: boolean;
-  login: () => void;
+  login: (access: string, refresh: string) => void;
   logout: () => void;
-  toogleAuth: () => void;
-} 
+}
 
 const AuthContext = createContext<AuthContextType | null>(null);
+
+// Залогинен, если есть живой refresh: access по нему всегда можно обновить
+const checkAuth = () => {
+  const refresh = tokens.getRefresh();
+  return Boolean(refresh) && !isTokenExpired(refresh!);
+};
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
-
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [isAuth, setIsAuth] = useState<boolean>(() => {
-    return localStorage.getItem('isAuth') === 'true'
-  });
-
-  useEffect(() => {
-    localStorage.setItem('isAuth', String(isAuth));
-  }, [isAuth])
+  const [isAuth, setIsAuth] = useState(checkAuth);
 
   useEffect(() => {
     const controller = new AbortController();
+    const sync = () => setIsAuth(checkAuth());
 
-    window.addEventListener(
-      'storage', 
-      (event: StorageEvent) => {
-        console.log('event', event)
-
-        if( event.key === 'isAuth') {
-          setIsAuth(event.newValue === 'true');
-        }
-      },
-      { signal: controller.signal }
-    );
+    // токены поменялись в этой вкладке (логин, выход, refresh в baseApi)
+    window.addEventListener(AUTH_CHANGE_EVENT, sync, { signal: controller.signal });
+    // ...или в другой вкладке: событие storage приходит только в остальные вкладки
+    window.addEventListener('storage', sync, { signal: controller.signal });
 
     return () => controller.abort();
-  }, [])
+  }, []);
 
-  const login = () => setIsAuth(true);
-  const logout = () => setIsAuth(false);
-  const toogleAuth = () => setIsAuth(prev => !prev);
+  const login = (access: string, refresh: string) => tokens.save(access, refresh);
+  const logout = () => tokens.clear();
 
-  return <AuthContext.Provider value={{ isAuth, login, logout, toogleAuth }}>
-    {children}
-  </AuthContext.Provider>
-}
+  return (
+    <AuthContext.Provider value={{ isAuth, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
@@ -58,4 +53,4 @@ export const useAuth = (): AuthContextType => {
   }
 
   return context;
-}
+};

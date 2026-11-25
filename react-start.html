@@ -606,6 +606,20 @@ footer { grid-column: 1 / -1; color: var(--muted); font-size: 13px; border-top: 
       <li><a href="#h-activate"><span>7.10</span>Активация аккаунта</a></li>
       <li><a href="#h-mistakes"><span>7.11</span>Частые ошибки</a></li>
     </ol>
+    <p class="toc-group">Глава 8 · Авторизация</p>
+    <ol>
+      <li><a href="#a-terms"><span>8.1</span>Аутентификация</a></li>
+      <li><a href="#a-types"><span>8.2</span>Виды авторизации</a></li>
+      <li><a href="#a-jwt"><span>8.3</span>JWT изнутри</a></li>
+      <li><a href="#a-refresh"><span>8.4</span>Access и refresh</a></li>
+      <li><a href="#a-storage"><span>8.5</span>Где хранить</a></li>
+      <li><a href="#a-practice"><span>8.6</span>Токены в проекте</a></li>
+      <li><a href="#a-register"><span>8.7</span>Регистрация</a></li>
+      <li><a href="#a-oauth"><span>8.8</span>OAuth 2</a></li>
+      <li><a href="#a-check"><span>8.9</span>Проверяем</a></li>
+      <li><a href="#a-structure"><span>8.10</span>Структура</a></li>
+      <li><a href="#a-mistakes"><span>8.11</span>Частые ошибки</a></li>
+    </ol>
   </nav>
 
   <main>
@@ -3529,8 +3543,8 @@ export const PostsPage = () =&gt; {
       <p>Что здесь важно:</p>
       <ol class="rules">
         <li><b>Фильтры в URL.</b> Перезагрузили страницу или отправили ссылку — фильтры и страница на месте. Кнопка «Назад» браузера тоже работает.</li>
-        <li>**<code>changeFilter</code> сбрасывает <code>page</code>.** Поменяли поиск — снова первая страница.</li>
-        <li>**<code>isLoading</code> vs <code>isFetching</code>.** <code>isLoading</code> — только самая первая загрузка (показываем скелетон). <code>isFetching</code> — любой запрос, в том числе при смене страницы. Пока он идёт, в <code>data</code> лежат <b>старые</b> посты — показываем их бледными, а не пустой экран.</li>
+        <li><b><code>changeFilter</code> сбрасывает <code>page</code>.</b> Поменяли поиск — снова первая страница.</li>
+        <li><b><code>isLoading</code> vs <code>isFetching</code>.</b> <code>isLoading</code> — только самая первая загрузка (показываем скелетон). <code>isFetching</code> — любой запрос, в том числе при смене страницы. Пока он идёт, в <code>data</code> лежат <b>старые</b> посты — показываем их бледными, а не пустой экран.</li>
         <li><b>Кэш.</b> Вернулись на страницу 1 после страницы 2 — RTK Query отдаст её из кэша без запроса.</li>
         <li><b>Имена параметров.</b> В URL сайта — короткие <code>group</code>, <code>page</code>; в запросе к серверу — <code>authorCourseGroup</code>, <code>offset</code>. Это разные вещи: адрес нашего сайта мы придумываем сами.</li>
       </ol>
@@ -3683,9 +3697,9 @@ export const ActivatePage = () =&gt; {
       <p>Что здесь важно:</p>
       <ol class="rules">
         <li><b>Флаги mutation</b> заменяют свой <code>status</code>: <code>isUninitialized</code> — запрос ещё не отправляли, <code>isLoading</code> — идёт, <code>isSuccess</code> — <code>204</code>, <code>isError</code> — любой другой код.</li>
-        <li>**<code>error.status</code>** — код ответа сервера (<code>400</code>, <code>403</code>), а в <code>error.data</code> — тело ошибки, например <code>{ "token": ["Invalid token for given user."] }</code>. Если сервер вообще не ответил, <code>status</code> будет строкой <code>'FETCH_ERROR'</code>.</li>
-        <li>**<code>useRef</code> от двойного запроса.** В режиме разработки <code>StrictMode</code> вызывает <code>useEffect</code> дважды (3.4). Query RTK Query сам склеивает одинаковые запросы, а mutation — нет: каждый вызов <code>activate</code> — новый <code>POST</code>. Второй запрос с тем же токеном сервер отклонит с <code>403</code>, и пользователь увидит «Уже активирован» вместо «Активирован!». <code>ref</code> переживает повторный запуск эффекта, поэтому запрос уходит один.</li>
-        <li>**<code>403</code> показываем как <code>info</code>, а не <code>error</code>**: аккаунт активен, пользователю можно просто войти.</li>
+        <li><b><code>error.status</code></b> — код ответа сервера (<code>400</code>, <code>403</code>), а в <code>error.data</code> — тело ошибки, например <code>{ "token": ["Invalid token for given user."] }</code>. Если сервер вообще не ответил, <code>status</code> будет строкой <code>'FETCH_ERROR'</code>.</li>
+        <li><b><code>useRef</code> от двойного запроса.</b> В режиме разработки <code>StrictMode</code> вызывает <code>useEffect</code> дважды (3.4). Query RTK Query сам склеивает одинаковые запросы, а mutation — нет: каждый вызов <code>activate</code> — новый <code>POST</code>. Второй запрос с тем же токеном сервер отклонит с <code>403</code>, и пользователь увидит «Уже активирован» вместо «Активирован!». <code>ref</code> переживает повторный запуск эффекта, поэтому запрос уходит один.</li>
+        <li><b><code>403</code> показываем как <code>info</code>, а не <code>error</code></b>: аккаунт активен, пользователю можно просто войти.</li>
       </ol>
       <p>Поток данных целиком:</p>
       <div class="code"><div class="code-head"><span class="file">Схема</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">/activate/Ng/atj1td-...  →  useParams() → { uid, token }
@@ -3727,9 +3741,1072 @@ POST /auth/users/activation/
         <li><b>Страница активации внутри <code>ProtectedRoute</code></b>По ссылке из письма приходит незалогиненный пользователь, и его не пустит.</li>
       </ul>
     </section>
+    <header class="chapter" id="ch8">
+      <p class="eyebrow">Глава 8</p>
+      <h2 class="chapter-title">Авторизация: OAuth 2 и JWT</h2>
+      <p>Разбираемся, чем аутентификация отличается от авторизации и какие бывают способы входа. Смотрим, как устроен JWT, зачем нужны access и refresh, где хранить токены. Делаем в проекте настоящий вход с автообновлением токена и регистрацию, разбираем «Войти через Google» по OAuth 2.</p>
+    </header>
+    <section id="a-terms">
+      <div class="step-head"><span class="step-num">8.1</span><h2>Аутентификация и авторизация</h2></div>
+      <p>Три слова, которые часто путают:</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Термин</th><th>Вопрос</th><th>Пример в блоге</th></tr></thead>
+        <tbody>
+          <tr><td><b>Идентификация</b></td><td>Кто ты? (назовись)</td><td>вводим email</td></tr>
+          <tr><td><b>Аутентификация</b></td><td>Докажи, что это ты</td><td>вводим пароль, сервер его проверяет</td></tr>
+          <tr><td><b>Авторизация</b></td><td>Что тебе можно?</td><td>удалять можно только свои посты</td></tr>
+        </tbody>
+      </table></div>
+      <p>Аналогия с офисом: на проходной называем фамилию (идентификация), показываем паспорт (аутентификация), получаем пропуск, который открывает только свой этаж (авторизация).</p>
+      <p>На практике «авторизацией» часто называют всё сразу, включая форму входа. В этой главе тоже: «авторизованный пользователь» — тот, кто вошёл.</p>
+      <p>Сервер сообщает о проблемах двумя кодами (7.2):</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Код</th><th>Что значит</th><th>Что делаем на фронтенде</th></tr></thead>
+        <tbody>
+          <tr><td><code>401</code></td><td>«Не знаю, кто ты»: нет токена, он испорчен или истёк</td><td>обновляем токен или отправляем на логин</td></tr>
+          <tr><td><code>403</code></td><td>«Знаю, кто ты, но нельзя»: прав не хватает</td><td>показываем «Нет доступа», на логин не шлём</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note"><span class="note-label">Подсказка</span><p>Название <code>401 Unauthorized</code> историческое и сбивает с толку: по смыслу это «не аутентифицирован». А «не авторизован» — это как раз <code>403 Forbidden</code>.</p></div>
+    </section>
+    <section id="a-types">
+      <div class="step-head"><span class="step-num">8.2</span><h2>Виды авторизации</h2></div>
+      <p>HTTP не помнит предыдущих запросов: каждый запрос для сервера — от незнакомца. Поэтому в <b>каждом</b> запросе нужно как-то доказать, кто мы. Способы:</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Способ</th><th>Что уходит в каждом запросе</th><th>Где встречается</th></tr></thead>
+        <tbody>
+          <tr><td><b>Basic Auth</b></td><td>логин и пароль: <code>Authorization: Basic YWRtaW46MTIz</code></td><td>внутренние админки, простые API</td></tr>
+          <tr><td><b>Сессия + cookie</b></td><td>cookie <code>sessionid=abc123</code>, браузер шлёт сам</td><td>классические сайты (Django, PHP, Rails)</td></tr>
+          <tr><td><b>Токен (Bearer)</b></td><td><code>Authorization: Bearer &lt;токен&gt;</code></td><td>SPA и мобильные приложения — <b>наш сервер</b></td></tr>
+          <tr><td><b>API-ключ</b></td><td><code>X-API-Key: sk_live_...</code></td><td>сервер ↔ сервер: платежи, карты, погода</td></tr>
+          <tr><td><b>OAuth 2 / OpenID Connect</b></td><td>токен, выданный другим сервисом</td><td>«Войти через Google / GitHub»</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Basic Auth</h3>
+      <p>Логин и пароль склеиваются через двоеточие и кодируются в base64:</p>
+      <div class="code"><div class="code-head"><span class="file">Пример</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">btoa('admin:123'); // 'YWRtaW46MTIz'
+// Authorization: Basic YWRtaW46MTIz</code></pre></div>
+      <p>base64 — это <b>не шифрование</b>, <code>atob('YWRtaW46MTIz')</code> вернёт пароль обратно. Пароль летит в каждом запросе, «выйти» нельзя. Работает только поверх HTTPS и только для простых случаев.</p>
+      <h3>Сессия и cookie</h3>
+      <div class="code"><div class="code-head"><span class="file">Схема</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">1. POST /login { email, password }
+2. Сервер создаёт сессию у себя в базе:  abc123 → { userId: 42 }
+3. Ответ: Set-Cookie: sessionid=abc123; HttpOnly; Secure
+4. Дальше браузер сам добавляет Cookie: sessionid=abc123 к каждому запросу на этот домен
+5. Сервер ищет abc123 в базе → это пользователь 42</code></pre></div>
+      <p>Сервер <b>хранит состояние</b> (stateful): знает все активные сессии. Плюс — выйти можно мгновенно: удалили сессию из базы, и всё. Минус — на каждый запрос поход в базу, а cookie неудобны, если фронтенд и API на разных доменах или есть мобильное приложение.</p>
+      <h3>Токены</h3>
+      <div class="code"><div class="code-head"><span class="file">Схема</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">1. POST /auth/jwt/create/ { email, password }
+2. Сервер ничего не запоминает, а выдаёт подписанный токен: { access, refresh }
+3. Фронтенд сохраняет токен сам
+4. Каждый запрос: Authorization: Bearer &lt;access&gt;
+5. Сервер проверяет подпись токена и читает из него userId — без базы</code></pre></div>
+      <p>Сервер <b>не хранит состояние</b> (stateless): вся информация внутри токена. Подходит для SPA, мобильных приложений и нескольких серверов сразу. Минус — выданный токен нельзя «отозвать» до истечения срока. Поэтому <code>access</code>-токен живёт недолго (8.4).</p>
+      <div class="note"><span class="note-label">Подсказка</span><p><code>Bearer</code> переводится как «предъявитель»: кто предъявил токен, тот и пользователь. Украли токен — украли доступ. Поэтому токены, как и пароли, никому не показываем и не пишем в <code>console.log</code> на проде.</p></div>
+      <h3>Сравнение</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th></th><th>Сессия + cookie</th><th>JWT-токен</th></tr></thead>
+        <tbody>
+          <tr><td>Где состояние</td><td>на сервере (база сессий)</td><td>в самом токене</td></tr>
+          <tr><td>Кто отправляет</td><td>браузер сам</td><td>мы руками, в заголовке</td></tr>
+          <tr><td>Выход</td><td>удалили сессию — мгновенно</td><td>ждём, пока истечёт <code>access</code></td></tr>
+          <tr><td>Разные домены, мобилки</td><td>неудобно</td><td>без проблем</td></tr>
+          <tr><td>Главная угроза</td><td>CSRF</td><td>XSS (кража токена из <code>localStorage</code>)</td></tr>
+        </tbody>
+      </table></div>
+      <p>Ни один способ не лучше «вообще». Наш сервер выбрал JWT — с ним и работаем.</p>
+    </section>
+    <section id="a-jwt">
+      <div class="step-head"><span class="step-num">8.3</span><h2>JWT изнутри</h2></div>
+      <p><b>JWT</b> (JSON Web Token, читается «джот») — строка из трёх частей через точку:</p>
+      <div class="code"><div class="code-head"><span class="file">Схема</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzk1Njk5MjAwLCJpYXQiOjE3OTU2OTg5MDAsImp0aSI6IjVmMWM5YTdlMmIiLCJ1c2VyX2lkIjo0Mn0.yE1O-wbTjYRaDIIffgQHJ2PP_xd6169qj-Ww73CxOm4</code></pre></div>
+      <p>Если сократить:</p>
+      <div class="code"><div class="code-head"><span class="file">Схема</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">eyJhbGciOiJI...  .  eyJ0b2tlbl90...  .  yE1O-wbTjYRa...
+└─────┬──────┘      └──────┬─────┘      └──────┬─────┘
+   header              payload            signature</code></pre></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Часть</th><th>Что внутри</th><th>Пример после декодирования</th></tr></thead>
+        <tbody>
+          <tr><td><b>header</b></td><td>алгоритм подписи и тип</td><td><code>{ "alg": "HS256", "typ": "JWT" }</code></td></tr>
+          <tr><td><b>payload</b></td><td>данные — «утверждения» (claims)</td><td><code>{ "user_id": 42, "exp": 1795699200, ... }</code></td></tr>
+          <tr><td><b>signature</b></td><td>подпись header + payload секретным ключом сервера</td><td>набор байт, прочитать нельзя</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Payload</h3>
+      <p>Payload нашего сервера:</p>
+      <div class="code"><div class="code-head"><span class="file">Payload</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-json">{
+  "token_type": "access",
+  "exp": 1795699200,
+  "iat": 1795698900,
+  "jti": "5f1c9a7e2b",
+  "user_id": 42
+}</code></pre></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Поле</th><th>Что значит</th></tr></thead>
+        <tbody>
+          <tr><td><code>exp</code></td><td>expiration — когда истекает (секунды с 1 января 1970, не миллисекунды!)</td></tr>
+          <tr><td><code>iat</code></td><td>issued at — когда выдан</td></tr>
+          <tr><td><code>jti</code></td><td>JWT id — уникальный номер токена</td></tr>
+          <tr><td><code>user_id</code></td><td>кто владелец (в стандарте для этого есть поле <code>sub</code>)</td></tr>
+          <tr><td><code>token_type</code></td><td><code>access</code> или <code>refresh</code> — так сервер не примет refresh вместо access</td></tr>
+        </tbody>
+      </table></div>
+      <p>Стандартные поля названы тремя буквами, чтобы токен был короче. Кроме <code>exp</code>, <code>iat</code> и <code>jti</code> бывают <code>sub</code> (кто), <code>iss</code> (кто выдал), <code>aud</code> (для какого сервиса).</p>
+      <p>Проверьте сами: залогиньтесь в Swagger, скопируйте <code>access</code> и вставьте на <a href="https://jwt.io" target="_blank" rel="noopener">jwt.io</a> — увидите header и payload. Или прямо в консоли браузера:</p>
+      <div class="code"><div class="code-head"><span class="file">Консоль браузера</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-js">const token = localStorage.getItem('access');
+JSON.parse(atob(token.split('.')[1])); // { token_type: 'access', exp: ..., user_id: ... }
+new Date(1795699200 * 1000);            // exp → дата: умножаем на 1000</code></pre></div>
+      <h3>Подпись</h3>
+      <div class="code"><div class="code-head"><span class="file">Схема</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">signature = HMAC_SHA256( base64url(header) + "." + base64url(payload),  СЕКРЕТ_СЕРВЕРА )</code></pre></div>
+      <p>Секрет знает только сервер. Когда приходит токен, сервер заново считает подпись и сравнивает:</p>
+      <div class="code"><div class="code-head"><span class="file">Схема</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">Пользователь поменял в payload user_id: 42 → 1 (хочет стать админом)
+        ↓
+Сервер считает подпись от нового payload → она другая
+        ↓
+Подпись не совпала → 401</code></pre></div>
+      <p>Главное про JWT:</p>
+      <ol class="rules">
+        <li><b>Payload не зашифрован</b>, его прочитает кто угодно. Никаких паролей и личных данных внутри.</li>
+        <li><b>Подделать нельзя</b>: без секрета сервера правильную подпись не посчитать.</li>
+        <li><b>Фронтенд подпись не проверяет</b> — секрета у нас нет и быть не должно. Мы только читаем payload, например чтобы узнать <code>exp</code>.</li>
+        <li><b>Base64url</b> — это base64, где <code>+</code> → <code>-</code>, <code>/</code> → <code>_</code> и без <code>=</code> на конце, чтобы токен можно было класть в URL.</li>
+      </ol>
+      <div class="note"><span class="note-label">Подсказка</span><p><code>HS256</code> — один общий секрет: и подписывает, и проверяет один сервер. <code>RS256</code> — пара ключей: подписывают закрытым, проверяют открытым. Так делают Google и другие OAuth-провайдеры: открытый ключ публикуют, и любой сервис может проверить их токен.</p></div>
+    </section>
+    <section id="a-refresh">
+      <div class="step-head"><span class="step-num">8.4</span><h2>Access и refresh</h2></div>
+      <p>Если токен украли, злоумышленник пользуется им, пока тот не истечёт. Значит, токен должен жить недолго. Но если он живёт 5 минут, пользователь будет вводить пароль каждые 5 минут. Решение — <b>два токена</b>:</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th></th><th><code>access</code></th><th><code>refresh</code></th></tr></thead>
+        <tbody>
+          <tr><td>Зачем</td><td>доступ к API</td><td>получить новый <code>access</code></td></tr>
+          <tr><td>Живёт</td><td>минуты</td><td>дни</td></tr>
+          <tr><td>Куда отправляем</td><td>в <b>каждый</b> запрос, заголовок <code>Authorization</code></td><td><b>только</b> на <code>/auth/jwt/refresh/</code></td></tr>
+          <tr><td>Если украли</td><td>вред ограничен минутами</td><td>опасно, но его видно реже — шансов украсть меньше</td></tr>
+        </tbody>
+      </table></div>
+      <p>Точное время жизни смотрите в <code>exp</code> своих токенов: <code>exp - iat</code> — сколько секунд живёт токен.</p>
+      <p>Эндпоинты нашего сервера (<a href="https://studapi.teachmeskills.by/api/schema/swagger-ui/#/auth" target="_blank" rel="noopener">Swagger, раздел auth</a>):</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Запрос</th><th>Тело</th><th>Ответ</th></tr></thead>
+        <tbody>
+          <tr><td><code>POST /auth/jwt/create/</code></td><td><code>{ email, password }</code></td><td><code>200 { access, refresh }</code>, <code>401</code> — неверные данные</td></tr>
+          <tr><td><code>POST /auth/jwt/refresh/</code></td><td><code>{ refresh }</code></td><td><code>200 { access }</code>, <code>401</code> — refresh истёк</td></tr>
+          <tr><td><code>POST /auth/jwt/verify/</code></td><td><code>{ token }</code></td><td><code>200 {}</code> — токен живой, <code>401</code> — нет</td></tr>
+        </tbody>
+      </table></div>
+      <p>Полный цикл:</p>
+      <div class="code"><div class="code-head"><span class="file">Схема</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">Логин
+  POST /auth/jwt/create/ { email, password }   →  { access, refresh }  → сохраняем оба
+
+Обычная работа
+  GET /blog/posts/   Authorization: Bearer &lt;access&gt;   → 200
+
+Прошло время, access истёк
+  POST /blog/posts/  Authorization: Bearer &lt;старый access&gt;   → 401
+        ↓
+  POST /auth/jwt/refresh/ { refresh }   → { access }  → сохраняем новый access
+        ↓
+  повторяем POST /blog/posts/ с новым access   → 201       (пользователь ничего не заметил)
+
+Прошли дни, refresh тоже истёк
+  POST /auth/jwt/refresh/   → 401   → удаляем токены, отправляем на логин</code></pre></div>
+      <div class="note"><span class="note-label">Подсказка</span><p>Выход из аккаунта на фронтенде — это просто удаление токенов. Сами токены на сервере остаются действительными до <code>exp</code>. Поэтому <code>access</code> и делают коротким.</p></div>
+    </section>
+    <section id="a-storage">
+      <div class="step-head"><span class="step-num">8.5</span><h2>Где хранить токены</h2></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Где</th><th>Плюсы</th><th>Минусы</th></tr></thead>
+        <tbody>
+          <tr><td><code>localStorage</code></td><td>просто, переживает перезагрузку и закрытие вкладки</td><td>читает любой JS на странице — при XSS токен украдут</td></tr>
+          <tr><td><code>sessionStorage</code></td><td>то же, но живёт до закрытия вкладки</td><td>те же риски XSS, в новой вкладке надо логиниться заново</td></tr>
+          <tr><td>Память (переменная, Redux)</td><td>украсть сложнее</td><td>пропадает при F5</td></tr>
+          <tr><td>Cookie <code>HttpOnly</code></td><td>JS не может прочитать вообще</td><td>ставит только сервер; нужна защита от CSRF (<code>SameSite</code>)</td></tr>
+        </tbody>
+      </table></div>
+      <p><b>XSS</b> (cross-site scripting) — на страницу попал чужой скрипт: через комментарий без экранирования, заражённую npm-библиотеку, <code>dangerouslySetInnerHTML</code>. Этот скрипт делает <code>localStorage.getItem('access')</code> и отправляет токен себе.</p>
+      <p><b>CSRF</b> (cross-site request forgery) — чужой сайт отправляет запрос на наш API, а браузер сам прикладывает наши cookie. С токеном в заголовке этой проблемы нет: чужой сайт не знает токена.</p>
+      <p>Наш сервер отдаёт токены в теле ответа, поэтому храним их в <code>localStorage</code> — для учебного проекта это нормально. В боевых проектах часто делают так: <code>access</code> в памяти, <code>refresh</code> в <code>HttpOnly</code>-cookie, которую ставит сервер.</p>
+      <div class="note"><span class="note-label">Подсказка</span><p>React сам экранирует всё, что выводится через <code>{}</code>: <code>&lt;p&gt;{post.text}&lt;/p&gt;</code> скрипт не выполнит. Дыру открывают <code>dangerouslySetInnerHTML</code> и вставка ссылок вида <code>href={userInput}</code> (там может быть <code>javascript:...</code>).</p></div>
+    </section>
+    <section id="a-practice">
+      <div class="step-head"><span class="step-num">8.6</span><h2>Практика: токены в проекте</h2></div>
+      <p>Сейчас в проекте вход — это флажок <code>isAuth</code> в <code>localStorage</code>, который переключается кнопкой в шапке. Сервер про него ничего не знает. Сделаем настоящий вход:</p>
+      <ol class="rules">
+        <li>Помощник, который читает payload и <code>exp</code> из токена.</li>
+        <li>Одно место, где хранятся токены.</li>
+        <li><code>AuthContext</code> считает пользователя вошедшим, если есть живой <code>refresh</code>.</li>
+        <li><code>baseApi</code> подставляет <code>access</code> в запросы, а на <code>401</code> сам обновляет его и повторяет запрос.</li>
+        <li>Страница логина и кнопка выхода.</li>
+      </ol>
+      <h3>Читаем токен</h3>
+      <div class="code"><div class="code-head"><span class="file">src/shared/jwt.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">// Что лежит в payload токена нашего сервера (simplejwt)
+export interface JwtPayload {
+  token_type: 'access' | 'refresh';
+  exp: number; // когда истекает, секунды с 1970 года
+  iat: number; // когда выдан
+  jti: string; // уникальный id токена
+  user_id: number;
+}
+
+// Читаем payload БЕЗ проверки подписи — проверять подпись умеет только сервер
+export const decodeJwt = (token: string): JwtPayload | null =&gt; {
+  try {
+    const payload = token.split('.')[1];
+    // base64url → base64: другие символы, без "=" в конце
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    // atob даёт байты, TextDecoder собирает из них UTF-8 (на случай кириллицы)
+    const bytes = Uint8Array.from(atob(base64), (char) =&gt; char.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    return null; // не JWT или испорчен
+  }
+};
+
+// Истёк ли токен. Запас в 10 секунд — пока запрос летит, токен может «умереть»
+export const isTokenExpired = (token: string, marginSec = 10) =&gt; {
+  const payload = decodeJwt(token);
+  if (!payload) return true;
+  return payload.exp * 1000 &lt; Date.now() + marginSec * 1000;
+};</code></pre></div>
+      <p><code>atob</code> умеет только латиницу, поэтому для кириллицы в payload байты собираем через <code>TextDecoder</code>. Это то же самое, что <code>JSON.parse(atob(...))</code> из 8.3, только надёжнее.</p>
+      <h3>Храним токены</h3>
+      <div class="code"><div class="code-head"><span class="file">src/shared/tokens.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">const ACCESS_KEY = 'access';
+const REFRESH_KEY = 'refresh';
+
+// Своё событие: «токены поменялись». На него подписан AuthProvider
+export const AUTH_CHANGE_EVENT = 'auth-change';
+
+const notify = () =&gt; window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
+
+// Единственное место, которое знает, где лежат токены
+export const tokens = {
+  getAccess: () =&gt; localStorage.getItem(ACCESS_KEY),
+  getRefresh: () =&gt; localStorage.getItem(REFRESH_KEY),
+
+  // после логина приходят оба токена, после refresh — только access
+  save: (access: string, refresh?: string) =&gt; {
+    localStorage.setItem(ACCESS_KEY, access);
+    if (refresh) localStorage.setItem(REFRESH_KEY, refresh);
+    notify();
+  },
+
+  clear: () =&gt; {
+    localStorage.removeItem(ACCESS_KEY);
+    localStorage.removeItem(REFRESH_KEY);
+    notify();
+  },
+};</code></pre></div>
+      <p>Зачем своё событие <code>auth-change</code>? Токены будет менять не только React-компонент, но и <code>baseApi</code> (обновит <code>access</code> или удалит токены, когда <code>refresh</code> истечёт). <code>baseApi</code> — не компонент, хук <code>useAuth</code> там не вызвать. Он просто меняет <code>localStorage</code> и кричит «токены поменялись», а <code>AuthProvider</code> слушает.</p>
+      <div class="note"><span class="note-label">Подсказка</span><p>Событие <code>storage</code> браузер присылает только <b>другим</b> вкладкам, в своей вкладке оно не срабатывает. Поэтому нужны оба: <code>auth-change</code> для своей вкладки, <code>storage</code> — для остальных.</p></div>
+      <h3>AuthContext</h3>
+      <p>Заменяем флажок на проверку токенов. <code>toogleAuth</code> больше не нужен: войти можно только через форму.</p>
+      <div class="code"><div class="code-head"><span class="file">src/context/AuthContext.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { AUTH_CHANGE_EVENT, tokens } from '../shared/tokens';
+import { isTokenExpired } from '../shared/jwt';
+
+interface AuthContextType {
+  isAuth: boolean;
+  login: (access: string, refresh: string) =&gt; void;
+  logout: () =&gt; void;
+}
+
+const AuthContext = createContext&lt;AuthContextType | null&gt;(null);
+
+// Залогинен, если есть живой refresh: access по нему всегда можно обновить
+const checkAuth = () =&gt; {
+  const refresh = tokens.getRefresh();
+  return Boolean(refresh) &amp;&amp; !isTokenExpired(refresh!);
+};
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider = ({ children }: AuthProviderProps) =&gt; {
+  const [isAuth, setIsAuth] = useState(checkAuth);
+
+  useEffect(() =&gt; {
+    const controller = new AbortController();
+    const sync = () =&gt; setIsAuth(checkAuth());
+
+    // токены поменялись в этой вкладке (логин, выход, refresh в baseApi)
+    window.addEventListener(AUTH_CHANGE_EVENT, sync, { signal: controller.signal });
+    // ...или в другой вкладке: событие storage приходит только в остальные вкладки
+    window.addEventListener('storage', sync, { signal: controller.signal });
+
+    return () =&gt; controller.abort();
+  }, []);
+
+  const login = (access: string, refresh: string) =&gt; tokens.save(access, refresh);
+  const logout = () =&gt; tokens.clear();
+
+  return (
+    &lt;AuthContext.Provider value={{ isAuth, login, logout }}&gt;
+      {children}
+    &lt;/AuthContext.Provider&gt;
+  );
+};
+
+export const useAuth = (): AuthContextType =&gt; {
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error('useAuth должен использоваться внутри AuthProvider');
+  }
+
+  return context;
+};</code></pre></div>
+      <p>Почему смотрим на <code>refresh</code>, а не на <code>access</code>? <code>access</code> истекает через минуты, но это не значит, что пользователь вышел: <code>baseApi</code> обновит его при следующем запросе. А вот если истёк <code>refresh</code> — войти можно только заново.</p>
+      <h3>Автообновление токена в baseApi</h3>
+      <p>В 6.4 мы передавали в <code>createApi</code> готовый <code>fetchBaseQuery</code>. Теперь обернём его: своя функция <code>baseQuery</code> вызывает обычный запрос и смотрит на ответ.</p>
+      <div class="code"><div class="code-head"><span class="file">src/store/api/baseApi.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">import {
+  createApi,
+  fetchBaseQuery,
+  type BaseQueryFn,
+  type FetchArgs,
+  type FetchBaseQueryError,
+} from '@reduxjs/toolkit/query/react';
+import { tokens } from '../../shared/tokens';
+
+const rawBaseQuery = fetchBaseQuery({
+  baseUrl: 'https://studapi.teachmeskills.by',
+  // перед каждым запросом: если есть токен, добавляем заголовок
+  prepareHeaders: (headers) =&gt; {
+    const access = tokens.getAccess();
+    if (access) {
+      headers.set('Authorization', `Bearer ${access}`);
+    }
+    return headers;
+  },
+});
+
+// Один общий запрос обновления на все упавшие запросы
+let refreshPromise: Promise&lt;boolean&gt; | null = null;
+
+const refreshAccessToken = async (
+  api: Parameters&lt;BaseQueryFn&gt;[1],
+  extraOptions: object,
+): Promise&lt;boolean&gt; =&gt; {
+  const refresh = tokens.getRefresh();
+  if (!refresh) {
+    tokens.clear();
+    return false;
+  }
+
+  // POST /auth/jwt/refresh/  { refresh } → { access }
+  const result = await rawBaseQuery(
+    { url: '/auth/jwt/refresh/', method: 'POST', body: { refresh } },
+    api,
+    extraOptions,
+  );
+
+  const data = result.data as { access: string } | undefined;
+  if (data?.access) {
+    tokens.save(data.access);
+    return true;
+  }
+
+  // refresh тоже истёк или отозван — выходим из аккаунта
+  tokens.clear();
+  return false;
+};
+
+const baseQueryWithReauth: BaseQueryFn&lt;string | FetchArgs, unknown, FetchBaseQueryError&gt; = async (
+  args,
+  api,
+  extraOptions,
+) =&gt; {
+  let result = await rawBaseQuery(args, api, extraOptions);
+
+  const url = typeof args === 'string' ? args : args.url;
+  // 401 на логине — это неверный пароль, а не истёкший токен
+  const isAuthRequest = url.startsWith('/auth/jwt/');
+
+  if (result.error?.status === 401 &amp;&amp; !isAuthRequest) {
+    // если обновление уже идёт — ждём его, а не запускаем второе
+    refreshPromise ??= refreshAccessToken(api, extraOptions).finally(() =&gt; {
+      refreshPromise = null;
+    });
+
+    await refreshPromise;
+    // Повторяем исходный запрос ОДИН раз:
+    // - refresh удался — уйдёт уже с новым access;
+    // - не удался — токены удалены, запрос уйдёт как от гостя:
+    //   публичный (посты, регистрация) пройдёт, закрытый снова получит 401
+    result = await rawBaseQuery(args, api, extraOptions);
+  }
+
+  return result;
+};
+
+export const baseApi = createApi({
+  reducerPath: 'api',
+  baseQuery: baseQueryWithReauth,
+  // «ярлыки» для кэша: по ним RTK Query понимает, что пора перезапросить
+  tagTypes: ['blog'],
+  endpoints: () =&gt; ({}),
+});</code></pre></div>
+      <p>Что здесь важно:</p>
+      <ol class="rules">
+        <li><b><code>rawBaseQuery</code></b> — обычный <code>fetchBaseQuery</code>, как раньше. <code>baseQueryWithReauth</code> вызывает его и решает, что делать с <code>401</code>.</li>
+        <li><b>На <code>/auth/jwt/...</code> не обновляем</b>: <code>401</code> от логина означает «неверный пароль», обновлять тут нечего.</li>
+        <li><b>Один refresh на всех.</b> Страница может отправить 3 запроса сразу, и все три получат <code>401</code>. Без <code>refreshPromise</code> ушло бы 3 запроса на <code>/auth/jwt/refresh/</code>. Первый упавший запрос создаёт промис, остальные ждут его же. <code>??=</code> — «присвоить, если сейчас <code>null</code>».</li>
+        <li><b>Повторяем исходный запрос один раз</b> с теми же <code>args</code>. Если refresh удался, <code>prepareHeaders</code> подставит уже новый <code>access</code>.</li>
+        <li><b>Не удался — <code>tokens.clear()</code></b>: <code>AuthProvider</code> услышит событие, <code>isAuth</code> станет <code>false</code>, <code>ProtectedRoute</code> отправит на логин.</li>
+        <li><b>Почему повторяем и после неудачи?</b> Сервер отвечает <code>401</code> на <b>любой</b> запрос с испорченным или истёкшим токеном в заголовке, даже на публичный: список постов, регистрацию. После <code>tokens.clear()</code> повтор уйдёт без заголовка, как от гостя, и публичный запрос пройдёт. Закрытый снова получит <code>401</code>, и на этом всё: третьей попытки нет.</li>
+      </ol>
+      <p>Сгенерированные хуки (<code>blogApi.generated.ts</code>) ничего не знают про обновление токенов и ничего менять в них не нужно: все запросы идут через <code>baseQuery</code>.</p>
+      <h3>Страница логина</h3>
+      <p>Версия из 6.10, но токены сохраняет <code>login</code> из контекста, а после входа возвращаем пользователя туда, куда он шёл. Внизу ссылка на регистрацию — её сделаем в 8.7. Файл называем <code>index.tsx</code>, как у <code>ActivatePage</code>: тогда импорт короче — <code>./pages/LoginPage</code>.</p>
+      <div class="code"><div class="code-head"><span class="file">src/pages/LoginPage/index.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { useState, type FormEvent } from 'react';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router';
+import { Alert, Box, Button, TextField, Typography } from '@mui/material';
+import { useAuthJwtCreateCreateMutation } from '../../store/api/blogApi.generated';
+import { useAuth } from '../../context/AuthContext';
+import { PATHS } from '../../paths';
+
+export const LoginPage = () =&gt; {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuth, login } = useAuth();
+
+  // куда вернуть после входа: ProtectedRoute кладёт адрес в state
+  const from = (location.state as { from?: string } | null)?.from ?? '/';
+
+  const [createToken, { isLoading, isError }] = useAuthJwtCreateCreateMutation();
+
+  // уже вошли — на странице логина делать нечего
+  if (isAuth) return &lt;Navigate to={from} replace /&gt;;
+
+  const handleSubmit = async (e: FormEvent) =&gt; {
+    e.preventDefault();
+    try {
+      // POST /auth/jwt/create/ → { access, refresh }
+      const { access, refresh } = await createToken({
+        tokenObtainPairRequest: { email, password },
+      }).unwrap();
+
+      login(access, refresh);
+      navigate(from, { replace: true });
+    } catch {
+      // ошибку покажет isError
+    }
+  };
+
+  return (
+    &lt;Box component="form" onSubmit={handleSubmit} sx={{ display: 'grid', gap: 2, maxWidth: 360, py: 2, mx: 'auto' }}&gt;
+      &lt;Typography variant="h4"&gt;Вход&lt;/Typography&gt;
+      &lt;TextField label="Email" type="email" value={email} onChange={(e) =&gt; setEmail(e.target.value)} /&gt;
+      &lt;TextField
+        label="Пароль"
+        type="password"
+        value={password}
+        onChange={(e) =&gt; setPassword(e.target.value)}
+      /&gt;
+      {isError &amp;&amp; &lt;Alert severity="error"&gt;Неверный email или пароль&lt;/Alert&gt;}
+      &lt;Button type="submit" variant="contained" disabled={isLoading}&gt;
+        Войти
+      &lt;/Button&gt;
+      &lt;Typography variant="body2"&gt;
+        Нет аккаунта? &lt;Link to={PATHS.register()}&gt;Зарегистрироваться&lt;/Link&gt;
+      &lt;/Typography&gt;
+    &lt;/Box&gt;
+  );
+};</code></pre></div>
+      <div class="code"><div class="code-head"><span class="file">src/paths.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">export const PATHS = {
+  // ...
+  login: () =&gt; '/login',
+};</code></pre></div>
+      <div class="code"><div class="code-head"><span class="file">src/App.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { LoginPage } from './pages/LoginPage';
+
+// внутри &lt;Route element={&lt;Layout /&gt;}&gt;, НЕ внутри ProtectedRoute
+&lt;Route path={PATHS.login()} element={&lt;LoginPage /&gt;} /&gt;</code></pre></div>
+      <h3>ProtectedRoute: на логин, а не на 404</h3>
+      <div class="code"><div class="code-head"><span class="file">src/components/ProtectedRoute/ProtectedRoute.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { Navigate, Outlet, useLocation } from 'react-router';
+import { PATHS } from '../../paths';
+
+interface ProtectedRouteProps {
+  isAllowed: boolean; // Флаг авторизации
+  redirectPath?: string; // куда отправить, если нельзя
+}
+
+export const ProtectedRoute = ({ isAllowed, redirectPath = PATHS.login() }: ProtectedRouteProps) =&gt; {
+  const location = useLocation();
+
+  if (!isAllowed) {
+    // запоминаем, куда шёл пользователь, — LoginPage вернёт его туда
+    return &lt;Navigate to={redirectPath} replace state={{ from: location.pathname }} /&gt;;
+  }
+
+  return &lt;Outlet /&gt;;
+};</code></pre></div>
+      <p><code>state</code> — данные, которые передаются вместе с переходом, но не видны в адресе. <code>LoginPage</code> достаёт оттуда <code>from</code> через <code>useLocation()</code>. <code>replace</code> — заменяем запись в истории, чтобы кнопка «Назад» не возвращала на закрытую страницу и обратно на логин.</p>
+      <h3>Кнопка входа и выхода</h3>
+      <div class="code"><div class="code-head"><span class="file">src/components/Header/IsAuthToggle.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { IconButton, Tooltip } from '@mui/material';
+import LoginIcon from '@mui/icons-material/Login';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { Link } from 'react-router';
+import { useAuth } from '../../context/AuthContext';
+import { useAppDispatch } from '../../store/hooks';
+import { baseApi } from '../../store/api/baseApi';
+import { PATHS } from '../../paths';
+
+export const IsAuthToggle = () =&gt; {
+  const { isAuth, logout } = useAuth();
+  const dispatch = useAppDispatch();
+
+  if (!isAuth) {
+    return (
+      &lt;Tooltip title="Войти"&gt;
+        &lt;IconButton color="inherit" component={Link} to={PATHS.login()}&gt;
+          &lt;LoginIcon /&gt;
+        &lt;/IconButton&gt;
+      &lt;/Tooltip&gt;
+    );
+  }
+
+  const handleLogout = () =&gt; {
+    logout();
+    // чистим кэш RTK Query: в нём данные, загруженные от имени прошлого пользователя
+    dispatch(baseApi.util.resetApiState());
+  };
+
+  return (
+    &lt;Tooltip title="Выйти"&gt;
+      &lt;IconButton color="inherit" onClick={handleLogout}&gt;
+        &lt;LogoutIcon /&gt;
+      &lt;/IconButton&gt;
+    &lt;/Tooltip&gt;
+  );
+};</code></pre></div>
+      <p><code>resetApiState()</code> — очистить весь кэш RTK Query. Без этого после выхода и входа другим пользователем на экране на секунду будут данные прошлого.</p>
+      <p>Поток целиком:</p>
+      <div class="code"><div class="code-head"><span class="file">Схема</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">LoginPage: createToken({ email, password })  →  POST /auth/jwt/create/
+        ↓ { access, refresh }
+login(access, refresh) → tokens.save → событие auth-change → isAuth = true
+        ↓
+useBlogPostsListQuery → baseQueryWithReauth → prepareHeaders: Bearer &lt;access&gt;
+        ↓ 401 (access истёк)
+refreshAccessToken → POST /auth/jwt/refresh/ → tokens.save(новый access) → повтор запроса
+        ↓ 401 (refresh истёк)
+tokens.clear() → auth-change → isAuth = false → ProtectedRoute → /login</code></pre></div>
+    </section>
+    <section id="a-register">
+      <div class="step-head"><span class="step-num">8.7</span><h2>Практика: регистрация</h2></div>
+      <p>Регистрацию мы уже делали руками в Swagger (7.10). Теперь — страница в приложении. Путь пользователя целиком:</p>
+      <div class="code"><div class="code-head"><span class="file">Схема</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">/register  → POST /auth/users/ { username, email, password, course_group }  → 201
+        ↓ «Проверьте почту»
+письмо → /activate/:uid/:token → POST /auth/users/activation/   → 204   (7.10)
+        ↓
+/login     → POST /auth/jwt/create/ { email, password }        → { access, refresh }   (8.6)</code></pre></div>
+      <p>После регистрации пользователь <b>не залогинен</b>: аккаунт не активен, <code>POST /auth/jwt/create/</code> ответит <code>401</code>, пока не открыта ссылка из письма. Поэтому токены здесь не сохраняем, а показываем «Проверьте почту».</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Поле</th><th>Обязательное</th><th>Правила сервера</th></tr></thead>
+        <tbody>
+          <tr><td><code>username</code></td><td>да</td><td>до 150 символов: латиница, цифры и <code>@ . + - _</code>, без пробелов</td></tr>
+          <tr><td><code>email</code></td><td>да</td><td>правильный email, ещё не занятый</td></tr>
+          <tr><td><code>password</code></td><td>да</td><td>не короче 8 символов, не только цифры, не слишком простой</td></tr>
+          <tr><td><code>course_group</code></td><td>нет</td><td><code>id</code> группы из <code>GET /blog/groups/</code> или <code>null</code></td></tr>
+        </tbody>
+      </table></div>
+      <h3>Хуки из Swagger</h3>
+      <p>Регистрация, повторное письмо, активация — всё это эндпоинты <code>/auth/users/...</code>. Чтобы не перечислять каждый, берём их в генератор одним шаблоном:</p>
+      <div class="code"><div class="code-head"><span class="file">openapi-config.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">// берём только нужное: посты, группы, логин и всё про пользователей
+// (/^authUsers/ — регистрация, активация, повторное письмо, me, смена пароля…)
+filterEndpoints: [/^blog/, /^authJwt/, /^authUsers/],</code></pre></div>
+      <div class="code"><div class="code-head"><span class="file">Терминал</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-bash">npm run api:generate</code></pre></div>
+      <p>Появились <code>useAuthUsersCreateMutation</code> (регистрация) и <code>useAuthUsersResendActivationCreateMutation</code> (письмо ещё раз), а заодно <code>useAuthUsersMeRetrieveQuery</code>, <code>useAuthUsersSetPasswordCreateMutation</code> и другие — пригодятся для профиля. Шаблон <code>/^authUsersActivation/</code> из 7.10 больше не нужен: <code>/^authUsers/</code> его уже покрывает.</p>
+      <div class="note"><span class="note-label">Подсказка</span><p>Хук для групп <code>useBlogGroupsListQuery</code> уже есть: его даёт <code>/^blog/</code>. Групп 20, а по умолчанию сервер отдаёт по 10, поэтому просим <code>limit: 100</code>.</p></div>
+      <h3>Ошибки валидации</h3>
+      <p>На неверные данные сервер отвечает <code>400</code> и пишет ошибки <b>по полям</b>:</p>
+      <div class="code"><div class="code-head"><span class="file">Payload</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-json">{
+  "username": ["Enter a valid username. This value may contain only letters, numbers, and @/./+/-/_ characters."],
+  "email": ["user with this email already exists."],
+  "password": ["This password is too short. It must contain at least 8 characters."]
+}</code></pre></div>
+      <p>Ключ — имя поля, значение — <b>массив</b> строк: у одного поля может быть несколько ошибок. Ошибки, которые не относятся к одному полю, приходят в <code>non_field_errors</code>. Показываем каждую под своим полем через <code>error</code> и <code>helperText</code> у <code>TextField</code>.</p>
+      <h3>Formik</h3>
+      <p>В форме пять полей, и у каждого — значение, ошибка и флаг «пользователь уже трогал поле». На <code>useState</code> это пятнадцать состояний или самописный объект с общим <code>handleChange</code>. <b>Formik</b> — библиотека, которая хранит всё это за нас и запускает проверки.</p>
+      <div class="code"><div class="code-head"><span class="file">Терминал</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-bash">npm install formik</code></pre></div>
+      <p>Главное, что возвращает <code>useFormik</code>:</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Что</th><th>Зачем</th></tr></thead>
+        <tbody>
+          <tr><td><code>formik.values</code></td><td>значения полей: <code>{ username: '', email: '', ... }</code></td></tr>
+          <tr><td><code>formik.errors</code></td><td>ошибки, <b>строка</b> на поле: <code>{ email: 'Введите email' }</code></td></tr>
+          <tr><td><code>formik.touched</code></td><td>поля, которые пользователь уже трогал: ушёл с поля или нажал «Отправить»</td></tr>
+          <tr><td><code>formik.status</code></td><td>любое своё значение — положим туда общую ошибку формы</td></tr>
+          <tr><td><code>formik.isSubmitting</code></td><td><code>true</code>, пока выполняется <code>async onSubmit</code></td></tr>
+          <tr><td><code>formik.handleChange</code> / <code>handleBlur</code></td><td>обработчики для полей, находят поле по атрибуту <code>name</code></td></tr>
+          <tr><td><code>formik.getFieldProps('email')</code></td><td><code>{ name, value, onChange, onBlur }</code> для поля одной строкой</td></tr>
+          <tr><td><code>formik.handleSubmit</code></td><td>для <code>onSubmit</code> формы: сам делает <code>preventDefault</code> и запускает проверки</td></tr>
+        </tbody>
+      </table></div>
+      <p>Что происходит при отправке:</p>
+      <div class="code"><div class="code-head"><span class="file">Схема</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">«Зарегистрироваться» → formik.handleSubmit
+        ↓ все поля помечаются touched
+validate(values) → есть ошибки? → показываем под полями, onSubmit НЕ вызывается
+        ↓ ошибок нет
+onSubmit(values, helpers) → isSubmitting = true → POST /auth/users/
+        ↓ 400
+helpers.setErrors({ email: '...' }) → ошибки сервера под полями</code></pre></div>
+      <h3>Страница</h3>
+      <div class="code"><div class="code-head"><span class="file">src/pages/RegisterPage/index.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { Link, Navigate } from 'react-router';
+import { useFormik, type FormikErrors } from 'formik';
+import { Alert, Box, Button, MenuItem, TextField, Typography } from '@mui/material';
+import {
+  useAuthUsersCreateMutation,
+  useAuthUsersResendActivationCreateMutation,
+  useBlogGroupsListQuery,
+} from '../../store/api/blogApi.generated';
+import { useAuth } from '../../context/AuthContext';
+import { PATHS } from '../../paths';
+
+interface RegisterFormValues {
+  username: string;
+  email: string;
+  password: string;
+  passwordRepeat: string;
+  courseGroup: string; // в селекте значение — строка, серверу отдадим число
+}
+
+// Ошибки валидации от сервера: { email: ['...'], password: ['...', '...'] }
+type ServerErrors = Partial&lt;Record&lt;string, string[]&gt;&gt;;
+
+const getServerErrors = (error: unknown): ServerErrors | null =&gt; {
+  const { status, data } = (error ?? {}) as { status?: number; data?: unknown };
+  return status === 400 &amp;&amp; data &amp;&amp; typeof data === 'object' ? (data as ServerErrors) : null;
+};
+
+// Проверки до отправки: всё, что можно проверить без сервера
+const validate = (values: RegisterFormValues) =&gt; {
+  const errors: FormikErrors&lt;RegisterFormValues&gt; = {};
+
+  if (!values.username) errors.username = 'Введите имя пользователя';
+  else if (!/^[\w.@+-]+$/.test(values.username)) errors.username = 'Только латиница, цифры и @ . + - _';
+
+  if (!values.email) errors.email = 'Введите email';
+
+  if (values.password.length &lt; 8) errors.password = 'Не короче 8 символов';
+  else if (/^\d+$/.test(values.password)) errors.password = 'Пароль не может состоять только из цифр';
+
+  if (values.passwordRepeat !== values.password) errors.passwordRepeat = 'Пароли не совпадают';
+
+  return errors;
+};
+
+export const RegisterPage = () =&gt; {
+  const { isAuth } = useAuth();
+
+  // группы для выпадающего списка: их 20, берём все сразу
+  const { data: groups } = useBlogGroupsListQuery({ limit: 100 });
+
+  // POST /auth/users/ → 201 { id, username, email, course_group }
+  const [register, { isSuccess }] = useAuthUsersCreateMutation();
+  // POST /auth/users/resend_activation/ { email } — письмо ещё раз
+  const [resend, { isLoading: isResending, isSuccess: isResent }] =
+    useAuthUsersResendActivationCreateMutation();
+
+  const formik = useFormik&lt;RegisterFormValues&gt;({
+    initialValues: {
+      username: '',
+      email: '',
+      password: '',
+      passwordRepeat: '',
+      courseGroup: '',
+    },
+    validate,
+    // сюда попадаем, только если validate не нашёл ошибок
+    onSubmit: async (values, { setErrors, setStatus }) =&gt; {
+      setStatus(undefined);
+      try {
+        await register({
+          customUserCreateRequest: {
+            username: values.username,
+            email: values.email,
+            password: values.password,
+            course_group: values.courseGroup ? Number(values.courseGroup) : null,
+          },
+        }).unwrap();
+      } catch (error) {
+        const serverErrors = getServerErrors(error);
+
+        if (!serverErrors) {
+          // 500, нет сети и т. п. — не ошибка конкретного поля
+          setStatus('Не удалось зарегистрироваться. Попробуйте позже.');
+          return;
+        }
+
+        // массивы сервера → строки Formik, имена полей сервера → наши
+        setErrors({
+          username: serverErrors.username?.join(' '),
+          email: serverErrors.email?.join(' '),
+          password: serverErrors.password?.join(' '),
+          courseGroup: serverErrors.course_group?.join(' '),
+        });
+        // ошибка не по полю
+        setStatus(serverErrors.non_field_errors?.join(' '));
+      }
+    },
+  });
+
+  if (isAuth) return &lt;Navigate to="/" replace /&gt;;
+
+  // Успех: аккаунт создан, но не активен — нужна ссылка из письма (7.10)
+  if (isSuccess) {
+    const { email } = formik.values;
+
+    return (
+      &lt;Box sx={{ display: 'grid', gap: 2, maxWidth: 420, py: 2, mx: 'auto', justifyItems: 'start' }}&gt;
+        &lt;Typography variant="h4"&gt;Проверьте почту&lt;/Typography&gt;
+        &lt;Alert severity="success"&gt;
+          Мы отправили письмо на &lt;b&gt;{email}&lt;/b&gt;. Перейдите по ссылке из письма, чтобы
+          активировать аккаунт, затем войдите.
+        &lt;/Alert&gt;
+        &lt;Button
+          onClick={() =&gt; resend({ sendEmailResetRequest: { email } })}
+          disabled={isResending || isResent}
+        &gt;
+          {isResent ? 'Письмо отправлено ещё раз' : 'Письмо не пришло? Отправить ещё раз'}
+        &lt;/Button&gt;
+        &lt;Button component={Link} to={PATHS.login()} variant="contained"&gt;
+          Ко входу
+        &lt;/Button&gt;
+      &lt;/Box&gt;
+    );
+  }
+
+  // ошибку поля показываем, только когда пользователь его уже трогал
+  const errorText = (field: keyof RegisterFormValues) =&gt;
+    formik.touched[field] ? formik.errors[field] : undefined;
+
+  return (
+    &lt;Box
+      component="form"
+      onSubmit={formik.handleSubmit}
+      noValidate
+      sx={{ display: 'grid', gap: 2, maxWidth: 360, py: 2, mx: 'auto' }}
+    &gt;
+      &lt;Typography variant="h4"&gt;Регистрация&lt;/Typography&gt;
+      &lt;TextField
+        label="Имя пользователя"
+        {...formik.getFieldProps('username')}
+        required
+        error={Boolean(errorText('username'))}
+        helperText={errorText('username') ?? 'Латиница, цифры и @ . + - _'}
+      /&gt;
+      &lt;TextField
+        label="Email"
+        type="email"
+        {...formik.getFieldProps('email')}
+        required
+        error={Boolean(errorText('email'))}
+        helperText={errorText('email')}
+      /&gt;
+      &lt;TextField
+        label="Пароль"
+        type="password"
+        {...formik.getFieldProps('password')}
+        required
+        error={Boolean(errorText('password'))}
+        helperText={errorText('password') ?? 'Не короче 8 символов, не только цифры'}
+      /&gt;
+      &lt;TextField
+        label="Повторите пароль"
+        type="password"
+        {...formik.getFieldProps('passwordRepeat')}
+        required
+        error={Boolean(errorText('passwordRepeat'))}
+        helperText={errorText('passwordRepeat') ?? ' '}
+      /&gt;
+      &lt;TextField
+        select
+        label="Группа"
+        name="courseGroup"
+        value={formik.values.courseGroup}
+        onChange={formik.handleChange}
+        error={Boolean(errorText('courseGroup'))}
+        helperText={errorText('courseGroup')}
+      &gt;
+        &lt;MenuItem value=""&gt;Без группы&lt;/MenuItem&gt;
+        {groups?.results?.map((group) =&gt; (
+          &lt;MenuItem key={group.id} value={String(group.id)}&gt;
+            {group.name}
+          &lt;/MenuItem&gt;
+        ))}
+      &lt;/TextField&gt;
+
+      {formik.status &amp;&amp; &lt;Alert severity="error"&gt;{formik.status}&lt;/Alert&gt;}
+
+      &lt;Button type="submit" variant="contained" disabled={formik.isSubmitting}&gt;
+        Зарегистрироваться
+      &lt;/Button&gt;
+      &lt;Typography variant="body2"&gt;
+        Уже есть аккаунт? &lt;Link to={PATHS.login()}&gt;Войти&lt;/Link&gt;
+      &lt;/Typography&gt;
+    &lt;/Box&gt;
+  );
+};</code></pre></div>
+      <p>Что здесь важно:</p>
+      <ol class="rules">
+        <li><b><code>useFormik</code> — тоже хук</b>, поэтому вызываем его до раннего <code>return</code> (<code>if (isAuth) ...</code>), как и остальные хуки.</li>
+        <li><b><code>validate</code> — проверки на фронтенде.</b> Всё, что можно проверить без сервера: пустые поля, символы в <code>username</code>, длина пароля, совпадение паролей. Пока <code>validate</code> возвращает ошибки, <code>onSubmit</code> не вызывается и запрос не уходит.</li>
+        <li><b>Сервер всё равно главный.</b> Занятый email или «слишком простой пароль» знает только он. Его ошибки — массивы, а Formik ждёт строку на поле: склеиваем через <code>.join(' ')</code> и кладём через <code>setErrors</code>. Имена полей у сервера и формы могут отличаться: <code>course_group</code> → <code>courseGroup</code>. Как только пользователь поменяет любое поле, Formik снова запустит <code>validate</code>, и ошибки сервера пропадут — пользователь их уже увидел и исправляет.</li>
+        <li><b><code>setStatus</code></b> — для ошибки, которая не относится к полю: <code>non_field_errors</code>, <code>500</code>, нет сети. Выводим <code>formik.status</code> в <code>Alert</code>.</li>
+        <li><b>Ошибку показываем только у тронутого поля</b> — <code>formik.touched[field]</code>. Иначе пользователь откроет страницу, а все поля уже красные. При нажатии «Зарегистрироваться» Formik помечает тронутыми все поля.</li>
+        <li><b><code>{...formik.getFieldProps('username')}</code></b> — то же, что <code>name</code>, <code>value</code>, <code>onChange</code> и <code>onBlur</code> по отдельности. <code>name</code> должен совпадать с ключом в <code>initialValues</code>, иначе значение запишется не туда. У селекта <code>onBlur</code> не передаём: MUI вызывает его на элементе без <code>name</code>, и Formik ругается в консоли.</li>
+        <li><b><code>noValidate</code></b> у формы отключает встроенные подсказки браузера для <code>required</code> и <code>type="email"</code>, чтобы ошибки показывал только Formik и одинаково во всех браузерах. <code>required</code> у полей оставляем ради звёздочки в подписи.</li>
+        <li><b><code>course_group</code></b> в селекте — строка (<code>'3'</code>), а серверу нужно число или <code>null</code>: <code>Number(values.courseGroup)</code>.</li>
+        <li><b><code>isSuccess</code></b> — регистрация прошла, вместо формы показываем «Проверьте почту». Если письма нет, кнопка отправляет его повторно: <code>POST /auth/users/resend_activation/ { email }</code>.</li>
+        <li><b><code>helperText=" "</code></b> у повтора пароля — пустая строка-пробел держит место под подсказку, и форма не прыгает, когда появляется ошибка.</li>
+      </ol>
+      <div class="code"><div class="code-head"><span class="file">src/paths.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">export const PATHS = {
+  // ...
+  login: () =&gt; '/login',
+  register: () =&gt; '/register',
+};</code></pre></div>
+      <div class="code"><div class="code-head"><span class="file">src/App.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { RegisterPage } from './pages/RegisterPage';
+
+// рядом с /login, НЕ внутри ProtectedRoute
+&lt;Route path={PATHS.register()} element={&lt;RegisterPage /&gt;} /&gt;</code></pre></div>
+      <div class="note"><span class="note-label">Подсказка</span><p>Не регистрируйте десятки тестовых аккаунтов на настоящую почту: проверяйте ошибки валидации (они не создают пользователя), а полный путь пройдите один раз. И не оставляйте в <code>initialValues</code> свои email и пароль — они уедут в репозиторий.</p></div>
+    </section>
+    <section id="a-oauth">
+      <div class="step-head"><span class="step-num">8.8</span><h2>OAuth 2: «Войти через Google»</h2></div>
+      <h3>Задача</h3>
+      <p>Хотим, чтобы пользователь вошёл в наш блог через Google. Просить у него пароль от Google нельзя: мы получим доступ ко всему аккаунту, а пользователь должен нам доверять. <b>OAuth 2</b> — протокол, по которому Google сам спрашивает пользователя «Разрешить блогу видеть ваш email?» и выдаёт нам токен с <b>только этим</b> доступом.</p>
+      <p>Аналогия — ключ от машины для парковщика: заводит и паркует, но не открывает багажник. Ключ даёт хозяин (пользователь), а не сам парковщик берёт.</p>
+      <h3>Участники</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Роль</th><th>Кто это у нас</th></tr></thead>
+        <tbody>
+          <tr><td><b>Resource Owner</b></td><td>пользователь, владелец аккаунта</td></tr>
+          <tr><td><b>Client</b></td><td>наше приложение (блог)</td></tr>
+          <tr><td><b>Authorization Server</b></td><td><code>accounts.google.com</code> — спрашивает пароль и выдаёт токены</td></tr>
+          <tr><td><b>Resource Server</b></td><td>API Google с данными пользователя</td></tr>
+        </tbody>
+      </table></div>
+      <p>Перед началом приложение регистрируют у провайдера (Google Cloud Console, GitHub → Settings → Developer settings) и получают <code>client_id</code> и разрешённый <code>redirect_uri</code> — адрес, куда провайдер вернёт пользователя.</p>
+      <h3>Authorization Code + PKCE</h3>
+      <p>Главный и рекомендуемый сценарий (grant type) для сайтов и мобильных приложений:</p>
+      <div class="code"><div class="code-head"><span class="file">Схема</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">1. Пользователь жмёт «Войти через Google»
+        ↓
+2. Наш сайт перенаправляет на Google:
+   https://accounts.google.com/o/oauth2/v2/auth
+     ?response_type=code
+     &amp;client_id=my-blog
+     &amp;redirect_uri=https://blog.by/oauth/callback
+     &amp;scope=openid email profile          ← что просим
+     &amp;state=x7Kp2...                      ← случайная строка, защита от подделки
+     &amp;code_challenge=E9Melhoa...          ← PKCE
+     &amp;code_challenge_method=S256
+        ↓
+3. Google: вход + экран «Разрешить блогу доступ к email и профилю?» → «Разрешить»
+        ↓
+4. Google возвращает на наш сайт с одноразовым кодом:
+   https://blog.by/oauth/callback?code=4/0AY0e-g7...&amp;state=x7Kp2...
+        ↓
+5. Проверяем, что state совпал. Меняем code на токены:
+   POST https://oauth2.googleapis.com/token { code, code_verifier, client_id, redirect_uri }
+        ↓
+6. Ответ: { access_token, refresh_token, id_token, expires_in }</code></pre></div>
+      <p>Зачем такие сложности, почему не отдать токен сразу в шаге 4? Адрес с параметрами остаётся в истории браузера, логах серверов, заголовке <code>Referer</code>. Поэтому в адресе только <b>одноразовый код</b>, который сам по себе бесполезен.</p>
+      <p><b>PKCE</b> (Proof Key for Code Exchange, «пикси») — защита на случай, если код всё-таки перехватили:</p>
+      <div class="code"><div class="code-head"><span class="file">Схема</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">code_verifier  = случайная строка, храним у себя, никому не показываем
+code_challenge = base64url(SHA-256(code_verifier))   → отправляем в шаге 2
+
+В шаге 5 отправляем сам code_verifier. Провайдер считает от него SHA-256
+и сравнивает с code_challenge из шага 2. Перехватчик кода verifier не знает.</code></pre></div>
+      <p><b><code>state</code></b> — случайная строка, которую мы отправили и должны получить обратно. Если пришёл чужой <code>state</code>, это не наш вход: кто-то подсовывает нам свой код (CSRF).</p>
+      <h3>Код на фронтенде</h3>
+      <p>Наш учебный сервер OAuth не поддерживает, поэтому адреса ниже — для примера. Шаг 2 — отправить пользователя к провайдеру:</p>
+      <div class="code"><div class="code-head"><span class="file">src/shared/oauth.ts</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-ts">// Пример для учебного провайдера. У каждого провайдера свои адреса — смотрите его документацию
+const AUTHORIZE_URL = 'https://auth.example.com/oauth/authorize';
+const CLIENT_ID = 'my-blog-spa'; // выдают при регистрации приложения у провайдера
+const REDIRECT_URI = `${window.location.origin}/oauth/callback`;
+
+// случайная строка в base64url
+const randomString = (bytes = 32) =&gt;
+  btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(bytes))))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+
+// code_challenge = base64url(SHA-256(code_verifier))
+const sha256Base64Url = async (text: string) =&gt; {
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return btoa(String.fromCharCode(...new Uint8Array(hash)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+};
+
+// Шаг 1: отправляем пользователя на страницу входа провайдера
+export const startOAuthLogin = async () =&gt; {
+  const state = randomString(16); // защита от подделки ответа (CSRF)
+  const codeVerifier = randomString(32); // секрет PKCE, остаётся у нас
+
+  // переживут переход на чужой сайт и обратно
+  sessionStorage.setItem('oauth_state', state);
+  sessionStorage.setItem('oauth_verifier', codeVerifier);
+
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: CLIENT_ID,
+    redirect_uri: REDIRECT_URI,
+    scope: 'openid email profile',
+    state,
+    code_challenge: await sha256Base64Url(codeVerifier),
+    code_challenge_method: 'S256',
+  });
+
+  window.location.assign(`${AUTHORIZE_URL}?${params}`);
+};</code></pre></div>
+      <p>Шаги 4–6 — страница, куда провайдер возвращает пользователя:</p>
+      <div class="code"><div class="code-head"><span class="file">src/pages/OAuthCallbackPage/OAuthCallbackPage.tsx</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-tsx">import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
+import { Alert, CircularProgress } from '@mui/material';
+import { useAuth } from '../../context/AuthContext';
+
+// /oauth/callback?code=...&amp;state=... — сюда провайдер возвращает пользователя
+export const OAuthCallbackPage = () =&gt; {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const [error, setError] = useState('');
+  const isSent = useRef(false); // code одноразовый, а StrictMode запустит эффект дважды
+
+  useEffect(() =&gt; {
+    if (isSent.current) return;
+    isSent.current = true;
+
+    const code = searchParams.get('code');
+    const state = searchParams.get('state');
+    const codeVerifier = sessionStorage.getItem('oauth_verifier');
+
+    // state не совпал — ответ не на наш запрос
+    if (!code || !codeVerifier || state !== sessionStorage.getItem('oauth_state')) {
+      setError('Ссылка входа недействительна');
+      return;
+    }
+
+    // Шаг 2: меняем code на токены. Обычно через свой бэкенд, он же выдаёт свои JWT
+    fetch('/api/auth/oauth/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, code_verifier: codeVerifier }),
+    })
+      .then((response) =&gt; {
+        if (!response.ok) throw new Error(String(response.status));
+        return response.json() as Promise&lt;{ access: string; refresh: string }&gt;;
+      })
+      .then(({ access, refresh }) =&gt; {
+        login(access, refresh);
+        navigate('/', { replace: true });
+      })
+      .catch(() =&gt; setError('Не удалось войти'))
+      .finally(() =&gt; {
+        sessionStorage.removeItem('oauth_state');
+        sessionStorage.removeItem('oauth_verifier');
+      });
+  }, [searchParams, navigate, login]);
+
+  return error ? &lt;Alert severity="error"&gt;{error}&lt;/Alert&gt; : &lt;CircularProgress /&gt;;
+};</code></pre></div>
+      <p>Обычно шаг 5 делает <b>наш бэкенд</b>: получает от фронтенда <code>code</code>, сам меняет его у Google на токены, узнаёт email пользователя, находит или создаёт его у себя и выдаёт <b>свои</b> <code>access</code> и <code>refresh</code> — такие же, как при обычном логине. Дальше всё работает как в 8.6.</p>
+      <div class="note"><span class="note-label">Подсказка</span><p>На практике руками это пишут редко: есть готовые библиотеки — <code>@react-oauth/google</code>, <code>oidc-client-ts</code>, SDK Auth0, Keycloak, Firebase Auth. Но что происходит внутри, полезно понимать: на собеседованиях спрашивают.</p></div>
+      <h3>Другие сценарии (grant types)</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Сценарий</th><th>Когда</th><th>Статус</th></tr></thead>
+        <tbody>
+          <tr><td><b>Authorization Code + PKCE</b></td><td>сайты, SPA, мобильные приложения</td><td>рекомендуется</td></tr>
+          <tr><td><b>Client Credentials</b></td><td>сервер ↔ сервер, без пользователя</td><td>рекомендуется</td></tr>
+          <tr><td><b>Device Code</b></td><td>телевизор, консоль: «введите код на телефоне»</td><td>рекомендуется</td></tr>
+          <tr><td><b>Refresh Token</b></td><td>обновить <code>access_token</code></td><td>то же, что 8.4</td></tr>
+          <tr><td>Implicit</td><td>токен сразу в адресе, для SPA</td><td><b>устарел</b>, не использовать</td></tr>
+          <tr><td>Password</td><td>приложение само спрашивает логин и пароль</td><td><b>устарел</b>, не использовать</td></tr>
+        </tbody>
+      </table></div>
+      <h3>OAuth 2, OpenID Connect и JWT</h3>
+      <ul>
+        <li><b>OAuth 2</b> — про <b>доступ</b>: «блогу можно читать email». Это протокол, то есть порядок действий.</li>
+        <li><b>OpenID Connect (OIDC)</b> — надстройка над OAuth 2 про <b>вход</b>: добавляет <code>scope=openid</code> и <code>id_token</code> с данными пользователя (кто вошёл).</li>
+        <li><b>JWT</b> — <b>формат</b> токена. <code>id_token</code> в OIDC всегда JWT. <code>access_token</code> в OAuth может быть JWT, а может быть просто случайной строкой.</li>
+      </ul>
+      <p>То есть «OAuth или JWT?» — неправильный вопрос: OAuth — порядок действий, JWT — формат строки, они часто работают вместе.</p>
+    </section>
+    <section id="a-check">
+      <div class="step-head"><span class="step-num">8.9</span><h2>Проверяем</h2></div>
+      <ol class="rules">
+        <li><code>npm run dev</code>, открываем <code>/register</code>, жмём «Зарегистрироваться» с пустой формой — ошибки под полями, а в <b>Network</b> запроса нет: сработал <code>validate</code>. Пароли в двух полях разные — «Пароли не совпадают». Вводим уже занятый email — в <b>Network</b> ответ <code>400</code>, текст сервера под полем Email.</li>
+        <li>Регистрируемся по-настоящему — «Проверьте почту», ответ <code>201</code>. Пробуем войти до активации — «Неверный email или пароль» (<code>401</code>).</li>
+        <li>Открываем ссылку из письма на <code>localhost</code> (7.10), затем входим.</li>
+        <li>Выходим и открываем <code>/posts</code> — попадаем на <code>/login</code>.</li>
+        <li>Входим. Возвращает на <code>/posts</code>. В <b>Application → Local Storage</b> — <code>access</code> и <code>refresh</code>.</li>
+        <li>Во вкладке <b>Network</b> у запроса <code>posts/</code> есть заголовок <code>Authorization: Bearer eyJ...</code>.</li>
+        <li>Копируем <code>access</code> на <a href="https://jwt.io" target="_blank" rel="noopener">jwt.io</a> — видим <code>user_id</code> и <code>exp</code>.</li>
+        <li>Портим <code>access</code> в Local Storage (меняем пару символов) и обновляем список. В Network: <code>posts/</code> → <code>401</code>, <code>refresh/</code> → <code>200</code>, снова <code>posts/</code> → <code>200</code>. Пользователь ничего не заметил.</li>
+        <li>Портим и <code>refresh</code>, и <code>access</code>. Следующий запрос: <code>401</code>, <code>refresh/</code> → <code>401</code>, токены удалены, нас перекинуло на <code>/login</code>.</li>
+        <li>Открываем сайт во второй вкладке, жмём «Выйти» в первой — вторая тоже разлогинилась (событие <code>storage</code>).</li>
+        <li>Неверный пароль — «Неверный email или пароль», запроса на <code>refresh/</code> нет.</li>
+      </ol>
+    </section>
+    <section id="a-structure">
+      <div class="step-head"><span class="step-num">8.10</span><h2>Итоговая структура</h2></div>
+      <div class="code"><div class="code-head"><span class="file">Структура папок</span><button class="copy" type="button">Копировать</button></div><pre><code class="language-none">openapi-config.ts              # /^authUsers/ — регистрация, повторное письмо, me…
+package.json                   # + formik
+src/
+├── shared/
+│   ├── jwt.ts                 # decodeJwt, isTokenExpired
+│   ├── tokens.ts              # save / clear / getAccess / getRefresh + событие auth-change
+│   └── oauth.ts               # пример: startOAuthLogin (PKCE)
+├── context/
+│   └── AuthContext.tsx        # isAuth = есть живой refresh; login(access, refresh), logout()
+├── store/api/
+│   └── baseApi.ts             # Bearer в заголовок + на 401 refresh и повтор
+├── components/
+│   ├── ProtectedRoute/        # нет входа → /login, state.from
+│   └── Header/IsAuthToggle.tsx  # «Войти» / «Выйти» + resetApiState
+└── pages/
+    ├── LoginPage/             # POST /auth/jwt/create/ → обратно на from
+    ├── RegisterPage/          # Formik: validate + ошибки сервера по полям → «Проверьте почту»
+    └── OAuthCallbackPage/     # пример: проверка state, code → токены</code></pre></div>
+    </section>
+    <section id="a-mistakes">
+      <div class="step-head"><span class="step-num">8.11</span><h2>Частые ошибки</h2></div>
+      <ul class="mistakes">
+        <li><b>Путаем <code>401</code> и <code>403</code></b>На <code>403</code> отправляем на логин, а пользователь уже вошёл, ему просто нельзя. <code>401</code> — кто ты?, <code>403</code> — тебе нельзя.</li>
+        <li><b>Храним в payload JWT секреты</b>Payload читает кто угодно через <code>atob</code>. Подпись защищает от изменения, а не от чтения.</li>
+        <li><b>Проверяем подпись JWT на фронтенде</b>Для этого нужен секрет сервера, а в коде фронтенда его увидит любой. Фронтенд только читает <code>exp</code> и данные.</li>
+        <li><b><code>exp</code> сравниваем с <code>Date.now()</code> напрямую</b><code>exp</code> в секундах, <code>Date.now()</code> в миллисекундах. Нужно <code>exp * 1000</code>.</li>
+        <li><b>Отправляем <code>refresh</code> в заголовке <code>Authorization</code></b>Сервер ответит <code>401</code>: там ждут <code>access</code>. <code>refresh</code> уходит только в тело <code>/auth/jwt/refresh/</code>.</li>
+        <li><b>Забыли <code>Bearer </code></b>Или пробел после него: <code>Authorization: Bearer${token}</code> — сервер не узнает заголовок.</li>
+        <li><b>Обновляем токен на <code>401</code> от логина</b>Неверный пароль превращается в лишний запрос на <code>refresh/</code> (8.6, пункт 2).</li>
+        <li><b>Каждый упавший запрос делает свой refresh</b>3 параллельных <code>401</code> → 3 запроса на <code>refresh/</code>. Один общий промис <code>refreshPromise</code>.</li>
+        <li><b>Бесконечный цикл обновления</b>Запрос на <code>refresh/</code> сам получил <code>401</code> и снова пошёл обновлять. Повторяем запрос только один раз, при неудаче — <code>tokens.clear()</code>.</li>
+        <li><b>После неудачного refresh не повторяем запрос</b>Старый токен в заголовке ломает даже публичные запросы: посты и регистрация отвечают <code>401</code>. После <code>tokens.clear()</code> повторяем один раз как гость.</li>
+        <li><b>Сохраняем токены после регистрации</b>Их там нет: <code>POST /auth/users/</code> возвращает только данные пользователя. Входить можно только после активации.</li>
+        <li><b>Ждём ошибку поля строкой</b>Сервер присылает массив: <code>{ "email": ["..."] }</code>. Выводим через <code>.join(' ')</code>.</li>
+        <li><b><code>name</code> поля не совпадает с ключом в <code>initialValues</code></b>Formik запишет значение не туда, поле «не печатается».</li>
+        <li><b>Показываем <code>formik.errors</code> без <code>touched</code></b>Пользователь открыл страницу, а все поля уже красные.</li>
+        <li><b>Кладём в <code>setErrors</code> массив сервера</b>Formik ждёт строку на поле: <code>.join(' ')</code>.</li>
+        <li><b>Ждём, что <code>onSubmit</code> вызовется при ошибках <code>validate</code></b>Не вызовется: пока есть ошибки, запрос не уходит. Так и задумано.</li>
+        <li><b><code>course_group: '3'</code> строкой</b>Сервер ждёт число или <code>null</code>.</li>
+        <li><b><code>RegisterPage</code> внутри <code>ProtectedRoute</code></b>Незалогиненный пользователь не попадёт на регистрацию.</li>
+        <li><b>Выход без <code>resetApiState()</code></b>В кэше RTK Query остались данные прошлого пользователя.</li>
+        <li><b>Ждём событие <code>storage</code> в той же вкладке</b>Оно приходит только в другие. Для своей вкладки — своё событие.</li>
+        <li><b><code>isAuth</code> по <code>access</code></b><code>access</code> истёк через 5 минут, и пользователя выкинуло, хотя <code>refresh</code> живой. Смотрим на <code>refresh</code>.</li>
+        <li><b><code>LoginPage</code> внутри <code>ProtectedRoute</code></b>Незалогиненного туда не пустит, а залогиненному она не нужна: бесконечный редирект.</li>
+        <li><b>Токен в <code>console.log</code> или в адресе страницы</b>Попадёт в логи, историю и <code>Referer</code>. Токен — как пароль.</li>
+        <li><b>OAuth без <code>state</code></b>Злоумышленник может подсунуть свой <code>code</code>, и пользователь войдёт в чужой аккаунт.</li>
+        <li><b>Implicit flow в новом проекте</b>Устарел. Для SPA — Authorization Code + PKCE.</li>
+        <li><b><code>client_secret</code> в коде фронтенда</b>Любой увидит его в DevTools. Секрет живёт только на бэкенде, фронтенду хватает PKCE.</li>
+      </ul>
+    </section>
   </main>
 
-  <footer>Проверено на сборке: Vite 8, React 19, TypeScript, MUI 9, sass-embedded, Redux Toolkit 2 (RTK Query), react-redux 9, @rtk-query/codegen-openapi 2, axios 1. Ноябрь 2026.</footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>

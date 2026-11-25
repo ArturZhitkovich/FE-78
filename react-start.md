@@ -3729,3 +3729,1267 @@ POST /auth/users/activation/
 - **Запрос активации ушёл дважды** — `StrictMode` вызывает `useEffect` два раза, а mutation, в отличие от query, запросы не склеивает. Второй `POST` получает `403`. Защищаемся `useRef` (7.10).
 - **Ждём, что mutation запустится сама** — хук `useXxxMutation` только возвращает функцию, её надо вызвать в `useEffect` или обработчике.
 - **Страница активации внутри `ProtectedRoute`** — по ссылке из письма приходит незалогиненный пользователь, и его не пустит.
+
+---
+
+# Глава 8. Авторизация: OAuth 2 и JWT
+
+## 8.1. Аутентификация и авторизация
+
+Три слова, которые часто путают:
+
+| Термин              | Вопрос                    | Пример в блоге                                   |
+| ------------------- | ------------------------- | ------------------------------------------------ |
+| **Идентификация**   | Кто ты? (назовись)        | вводим email                                     |
+| **Аутентификация**  | Докажи, что это ты        | вводим пароль, сервер его проверяет              |
+| **Авторизация**     | Что тебе можно?           | удалять можно только свои посты                  |
+
+Аналогия с офисом: на проходной называем фамилию (идентификация), показываем паспорт (аутентификация), получаем пропуск, который открывает только свой этаж (авторизация).
+
+На практике «авторизацией» часто называют всё сразу, включая форму входа. В этой главе тоже: «авторизованный пользователь» — тот, кто вошёл.
+
+Сервер сообщает о проблемах двумя кодами (7.2):
+
+| Код   | Что значит                                         | Что делаем на фронтенде                     |
+| ----- | -------------------------------------------------- | ------------------------------------------- |
+| `401` | «Не знаю, кто ты»: нет токена, он испорчен или истёк | обновляем токен или отправляем на логин   |
+| `403` | «Знаю, кто ты, но нельзя»: прав не хватает          | показываем «Нет доступа», на логин не шлём |
+
+> Название `401 Unauthorized` историческое и сбивает с толку: по смыслу это «не аутентифицирован». А «не авторизован» — это как раз `403 Forbidden`.
+
+---
+
+## 8.2. Виды авторизации
+
+HTTP не помнит предыдущих запросов: каждый запрос для сервера — от незнакомца. Поэтому в **каждом** запросе нужно как-то доказать, кто мы. Способы:
+
+| Способ                  | Что уходит в каждом запросе                   | Где встречается                                   |
+| ----------------------- | --------------------------------------------- | ------------------------------------------------- |
+| **Basic Auth**          | логин и пароль: `Authorization: Basic YWRtaW46MTIz` | внутренние админки, простые API             |
+| **Сессия + cookie**     | cookie `sessionid=abc123`, браузер шлёт сам   | классические сайты (Django, PHP, Rails)           |
+| **Токен (Bearer)**      | `Authorization: Bearer <токен>`               | SPA и мобильные приложения — **наш сервер**       |
+| **API-ключ**            | `X-API-Key: sk_live_...`                      | сервер ↔ сервер: платежи, карты, погода           |
+| **OAuth 2 / OpenID Connect** | токен, выданный другим сервисом          | «Войти через Google / GitHub»                     |
+
+### Basic Auth
+
+Логин и пароль склеиваются через двоеточие и кодируются в base64:
+
+```ts
+btoa('admin:123'); // 'YWRtaW46MTIz'
+// Authorization: Basic YWRtaW46MTIz
+```
+
+base64 — это **не шифрование**, `atob('YWRtaW46MTIz')` вернёт пароль обратно. Пароль летит в каждом запросе, «выйти» нельзя. Работает только поверх HTTPS и только для простых случаев.
+
+### Сессия и cookie
+
+```none
+1. POST /login { email, password }
+2. Сервер создаёт сессию у себя в базе:  abc123 → { userId: 42 }
+3. Ответ: Set-Cookie: sessionid=abc123; HttpOnly; Secure
+4. Дальше браузер сам добавляет Cookie: sessionid=abc123 к каждому запросу на этот домен
+5. Сервер ищет abc123 в базе → это пользователь 42
+```
+
+Сервер **хранит состояние** (stateful): знает все активные сессии. Плюс — выйти можно мгновенно: удалили сессию из базы, и всё. Минус — на каждый запрос поход в базу, а cookie неудобны, если фронтенд и API на разных доменах или есть мобильное приложение.
+
+### Токены
+
+```none
+1. POST /auth/jwt/create/ { email, password }
+2. Сервер ничего не запоминает, а выдаёт подписанный токен: { access, refresh }
+3. Фронтенд сохраняет токен сам
+4. Каждый запрос: Authorization: Bearer <access>
+5. Сервер проверяет подпись токена и читает из него userId — без базы
+```
+
+Сервер **не хранит состояние** (stateless): вся информация внутри токена. Подходит для SPA, мобильных приложений и нескольких серверов сразу. Минус — выданный токен нельзя «отозвать» до истечения срока. Поэтому `access`-токен живёт недолго (8.4).
+
+> `Bearer` переводится как «предъявитель»: кто предъявил токен, тот и пользователь. Украли токен — украли доступ. Поэтому токены, как и пароли, никому не показываем и не пишем в `console.log` на проде.
+
+### Сравнение
+
+|                         | Сессия + cookie                      | JWT-токен                                     |
+| ----------------------- | ------------------------------------ | --------------------------------------------- |
+| Где состояние           | на сервере (база сессий)             | в самом токене                                |
+| Кто отправляет          | браузер сам                          | мы руками, в заголовке                        |
+| Выход                   | удалили сессию — мгновенно           | ждём, пока истечёт `access`                   |
+| Разные домены, мобилки  | неудобно                             | без проблем                                   |
+| Главная угроза          | CSRF                                 | XSS (кража токена из `localStorage`)          |
+
+Ни один способ не лучше «вообще». Наш сервер выбрал JWT — с ним и работаем.
+
+---
+
+## 8.3. JWT изнутри
+
+**JWT** (JSON Web Token, читается «джот») — строка из трёх частей через точку:
+
+```none
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzk1Njk5MjAwLCJpYXQiOjE3OTU2OTg5MDAsImp0aSI6IjVmMWM5YTdlMmIiLCJ1c2VyX2lkIjo0Mn0.yE1O-wbTjYRaDIIffgQHJ2PP_xd6169qj-Ww73CxOm4
+```
+
+Если сократить:
+
+```none
+eyJhbGciOiJI...  .  eyJ0b2tlbl90...  .  yE1O-wbTjYRa...
+└─────┬──────┘      └──────┬─────┘      └──────┬─────┘
+   header              payload            signature
+```
+
+| Часть         | Что внутри                                       | Пример после декодирования                        |
+| ------------- | ------------------------------------------------ | ------------------------------------------------- |
+| **header**    | алгоритм подписи и тип                           | `{ "alg": "HS256", "typ": "JWT" }`                |
+| **payload**   | данные — «утверждения» (claims)                  | `{ "user_id": 42, "exp": 1795699200, ... }`       |
+| **signature** | подпись header + payload секретным ключом сервера | набор байт, прочитать нельзя                     |
+
+### Payload
+
+Payload нашего сервера:
+
+```json
+{
+  "token_type": "access",
+  "exp": 1795699200,
+  "iat": 1795698900,
+  "jti": "5f1c9a7e2b",
+  "user_id": 42
+}
+```
+
+| Поле         | Что значит                                                       |
+| ------------ | ---------------------------------------------------------------- |
+| `exp`        | expiration — когда истекает (секунды с 1 января 1970, не миллисекунды!) |
+| `iat`        | issued at — когда выдан                                          |
+| `jti`        | JWT id — уникальный номер токена                                 |
+| `user_id`    | кто владелец (в стандарте для этого есть поле `sub`)             |
+| `token_type` | `access` или `refresh` — так сервер не примет refresh вместо access |
+
+Стандартные поля названы тремя буквами, чтобы токен был короче. Кроме `exp`, `iat` и `jti` бывают `sub` (кто), `iss` (кто выдал), `aud` (для какого сервиса).
+
+Проверьте сами: залогиньтесь в Swagger, скопируйте `access` и вставьте на [jwt.io](https://jwt.io) — увидите header и payload. Или прямо в консоли браузера:
+
+```js
+const token = localStorage.getItem('access');
+JSON.parse(atob(token.split('.')[1])); // { token_type: 'access', exp: ..., user_id: ... }
+new Date(1795699200 * 1000);            // exp → дата: умножаем на 1000
+```
+
+### Подпись
+
+```none
+signature = HMAC_SHA256( base64url(header) + "." + base64url(payload),  СЕКРЕТ_СЕРВЕРА )
+```
+
+Секрет знает только сервер. Когда приходит токен, сервер заново считает подпись и сравнивает:
+
+```none
+Пользователь поменял в payload user_id: 42 → 1 (хочет стать админом)
+        ↓
+Сервер считает подпись от нового payload → она другая
+        ↓
+Подпись не совпала → 401
+```
+
+Главное про JWT:
+
+1. **Payload не зашифрован**, его прочитает кто угодно. Никаких паролей и личных данных внутри.
+2. **Подделать нельзя**: без секрета сервера правильную подпись не посчитать.
+3. **Фронтенд подпись не проверяет** — секрета у нас нет и быть не должно. Мы только читаем payload, например чтобы узнать `exp`.
+4. **Base64url** — это base64, где `+` → `-`, `/` → `_` и без `=` на конце, чтобы токен можно было класть в URL.
+
+> `HS256` — один общий секрет: и подписывает, и проверяет один сервер. `RS256` — пара ключей: подписывают закрытым, проверяют открытым. Так делают Google и другие OAuth-провайдеры: открытый ключ публикуют, и любой сервис может проверить их токен.
+
+---
+
+## 8.4. Access и refresh
+
+Если токен украли, злоумышленник пользуется им, пока тот не истечёт. Значит, токен должен жить недолго. Но если он живёт 5 минут, пользователь будет вводить пароль каждые 5 минут. Решение — **два токена**:
+
+|                  | `access`                                 | `refresh`                                         |
+| ---------------- | ---------------------------------------- | ------------------------------------------------- |
+| Зачем            | доступ к API                             | получить новый `access`                           |
+| Живёт            | минуты                                   | дни                                               |
+| Куда отправляем  | в **каждый** запрос, заголовок `Authorization` | **только** на `/auth/jwt/refresh/`          |
+| Если украли      | вред ограничен минутами                  | опасно, но его видно реже — шансов украсть меньше |
+
+Точное время жизни смотрите в `exp` своих токенов: `exp - iat` — сколько секунд живёт токен.
+
+Эндпоинты нашего сервера ([Swagger, раздел auth](https://studapi.teachmeskills.by/api/schema/swagger-ui/#/auth)):
+
+| Запрос                    | Тело                    | Ответ                       |
+| ------------------------- | ----------------------- | --------------------------- |
+| `POST /auth/jwt/create/`  | `{ email, password }`   | `200 { access, refresh }`, `401` — неверные данные |
+| `POST /auth/jwt/refresh/` | `{ refresh }`           | `200 { access }`, `401` — refresh истёк            |
+| `POST /auth/jwt/verify/`  | `{ token }`             | `200 {}` — токен живой, `401` — нет                |
+
+Полный цикл:
+
+```none
+Логин
+  POST /auth/jwt/create/ { email, password }   →  { access, refresh }  → сохраняем оба
+
+Обычная работа
+  GET /blog/posts/   Authorization: Bearer <access>   → 200
+
+Прошло время, access истёк
+  POST /blog/posts/  Authorization: Bearer <старый access>   → 401
+        ↓
+  POST /auth/jwt/refresh/ { refresh }   → { access }  → сохраняем новый access
+        ↓
+  повторяем POST /blog/posts/ с новым access   → 201       (пользователь ничего не заметил)
+
+Прошли дни, refresh тоже истёк
+  POST /auth/jwt/refresh/   → 401   → удаляем токены, отправляем на логин
+```
+
+> Выход из аккаунта на фронтенде — это просто удаление токенов. Сами токены на сервере остаются действительными до `exp`. Поэтому `access` и делают коротким.
+
+---
+
+## 8.5. Где хранить токены
+
+| Где                          | Плюсы                                | Минусы                                                     |
+| ---------------------------- | ------------------------------------ | ---------------------------------------------------------- |
+| `localStorage`               | просто, переживает перезагрузку и закрытие вкладки | читает любой JS на странице — при XSS токен украдут |
+| `sessionStorage`             | то же, но живёт до закрытия вкладки  | те же риски XSS, в новой вкладке надо логиниться заново    |
+| Память (переменная, Redux)   | украсть сложнее                      | пропадает при F5                                           |
+| Cookie `HttpOnly`            | JS не может прочитать вообще         | ставит только сервер; нужна защита от CSRF (`SameSite`)    |
+
+**XSS** (cross-site scripting) — на страницу попал чужой скрипт: через комментарий без экранирования, заражённую npm-библиотеку, `dangerouslySetInnerHTML`. Этот скрипт делает `localStorage.getItem('access')` и отправляет токен себе.
+
+**CSRF** (cross-site request forgery) — чужой сайт отправляет запрос на наш API, а браузер сам прикладывает наши cookie. С токеном в заголовке этой проблемы нет: чужой сайт не знает токена.
+
+Наш сервер отдаёт токены в теле ответа, поэтому храним их в `localStorage` — для учебного проекта это нормально. В боевых проектах часто делают так: `access` в памяти, `refresh` в `HttpOnly`-cookie, которую ставит сервер.
+
+> React сам экранирует всё, что выводится через `{}`: `<p>{post.text}</p>` скрипт не выполнит. Дыру открывают `dangerouslySetInnerHTML` и вставка ссылок вида `href={userInput}` (там может быть `javascript:...`).
+
+---
+
+## 8.6. Практика: токены в проекте
+
+Сейчас в проекте вход — это флажок `isAuth` в `localStorage`, который переключается кнопкой в шапке. Сервер про него ничего не знает. Сделаем настоящий вход:
+
+1. Помощник, который читает payload и `exp` из токена.
+2. Одно место, где хранятся токены.
+3. `AuthContext` считает пользователя вошедшим, если есть живой `refresh`.
+4. `baseApi` подставляет `access` в запросы, а на `401` сам обновляет его и повторяет запрос.
+5. Страница логина и кнопка выхода.
+
+### Читаем токен
+
+`src/shared/jwt.ts`
+
+```ts
+// Что лежит в payload токена нашего сервера (simplejwt)
+export interface JwtPayload {
+  token_type: 'access' | 'refresh';
+  exp: number; // когда истекает, секунды с 1970 года
+  iat: number; // когда выдан
+  jti: string; // уникальный id токена
+  user_id: number;
+}
+
+// Читаем payload БЕЗ проверки подписи — проверять подпись умеет только сервер
+export const decodeJwt = (token: string): JwtPayload | null => {
+  try {
+    const payload = token.split('.')[1];
+    // base64url → base64: другие символы, без "=" в конце
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    // atob даёт байты, TextDecoder собирает из них UTF-8 (на случай кириллицы)
+    const bytes = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    return null; // не JWT или испорчен
+  }
+};
+
+// Истёк ли токен. Запас в 10 секунд — пока запрос летит, токен может «умереть»
+export const isTokenExpired = (token: string, marginSec = 10) => {
+  const payload = decodeJwt(token);
+  if (!payload) return true;
+  return payload.exp * 1000 < Date.now() + marginSec * 1000;
+};
+```
+
+`atob` умеет только латиницу, поэтому для кириллицы в payload байты собираем через `TextDecoder`. Это то же самое, что `JSON.parse(atob(...))` из 8.3, только надёжнее.
+
+### Храним токены
+
+`src/shared/tokens.ts`
+
+```ts
+const ACCESS_KEY = 'access';
+const REFRESH_KEY = 'refresh';
+
+// Своё событие: «токены поменялись». На него подписан AuthProvider
+export const AUTH_CHANGE_EVENT = 'auth-change';
+
+const notify = () => window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
+
+// Единственное место, которое знает, где лежат токены
+export const tokens = {
+  getAccess: () => localStorage.getItem(ACCESS_KEY),
+  getRefresh: () => localStorage.getItem(REFRESH_KEY),
+
+  // после логина приходят оба токена, после refresh — только access
+  save: (access: string, refresh?: string) => {
+    localStorage.setItem(ACCESS_KEY, access);
+    if (refresh) localStorage.setItem(REFRESH_KEY, refresh);
+    notify();
+  },
+
+  clear: () => {
+    localStorage.removeItem(ACCESS_KEY);
+    localStorage.removeItem(REFRESH_KEY);
+    notify();
+  },
+};
+```
+
+Зачем своё событие `auth-change`? Токены будет менять не только React-компонент, но и `baseApi` (обновит `access` или удалит токены, когда `refresh` истечёт). `baseApi` — не компонент, хук `useAuth` там не вызвать. Он просто меняет `localStorage` и кричит «токены поменялись», а `AuthProvider` слушает.
+
+> Событие `storage` браузер присылает только **другим** вкладкам, в своей вкладке оно не срабатывает. Поэтому нужны оба: `auth-change` для своей вкладки, `storage` — для остальных.
+
+### AuthContext
+
+Заменяем флажок на проверку токенов. `toogleAuth` больше не нужен: войти можно только через форму.
+
+`src/context/AuthContext.tsx`
+
+```tsx
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { AUTH_CHANGE_EVENT, tokens } from '../shared/tokens';
+import { isTokenExpired } from '../shared/jwt';
+
+interface AuthContextType {
+  isAuth: boolean;
+  login: (access: string, refresh: string) => void;
+  logout: () => void;
+}
+
+const AuthContext = createContext<AuthContextType | null>(null);
+
+// Залогинен, если есть живой refresh: access по нему всегда можно обновить
+const checkAuth = () => {
+  const refresh = tokens.getRefresh();
+  return Boolean(refresh) && !isTokenExpired(refresh!);
+};
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider = ({ children }: AuthProviderProps) => {
+  const [isAuth, setIsAuth] = useState(checkAuth);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const sync = () => setIsAuth(checkAuth());
+
+    // токены поменялись в этой вкладке (логин, выход, refresh в baseApi)
+    window.addEventListener(AUTH_CHANGE_EVENT, sync, { signal: controller.signal });
+    // ...или в другой вкладке: событие storage приходит только в остальные вкладки
+    window.addEventListener('storage', sync, { signal: controller.signal });
+
+    return () => controller.abort();
+  }, []);
+
+  const login = (access: string, refresh: string) => tokens.save(access, refresh);
+  const logout = () => tokens.clear();
+
+  return (
+    <AuthContext.Provider value={{ isAuth, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error('useAuth должен использоваться внутри AuthProvider');
+  }
+
+  return context;
+};
+```
+
+Почему смотрим на `refresh`, а не на `access`? `access` истекает через минуты, но это не значит, что пользователь вышел: `baseApi` обновит его при следующем запросе. А вот если истёк `refresh` — войти можно только заново.
+
+### Автообновление токена в baseApi
+
+В 6.4 мы передавали в `createApi` готовый `fetchBaseQuery`. Теперь обернём его: своя функция `baseQuery` вызывает обычный запрос и смотрит на ответ.
+
+`src/store/api/baseApi.ts`
+
+```ts
+import {
+  createApi,
+  fetchBaseQuery,
+  type BaseQueryFn,
+  type FetchArgs,
+  type FetchBaseQueryError,
+} from '@reduxjs/toolkit/query/react';
+import { tokens } from '../../shared/tokens';
+
+const rawBaseQuery = fetchBaseQuery({
+  baseUrl: 'https://studapi.teachmeskills.by',
+  // перед каждым запросом: если есть токен, добавляем заголовок
+  prepareHeaders: (headers) => {
+    const access = tokens.getAccess();
+    if (access) {
+      headers.set('Authorization', `Bearer ${access}`);
+    }
+    return headers;
+  },
+});
+
+// Один общий запрос обновления на все упавшие запросы
+let refreshPromise: Promise<boolean> | null = null;
+
+const refreshAccessToken = async (
+  api: Parameters<BaseQueryFn>[1],
+  extraOptions: object,
+): Promise<boolean> => {
+  const refresh = tokens.getRefresh();
+  if (!refresh) {
+    tokens.clear();
+    return false;
+  }
+
+  // POST /auth/jwt/refresh/  { refresh } → { access }
+  const result = await rawBaseQuery(
+    { url: '/auth/jwt/refresh/', method: 'POST', body: { refresh } },
+    api,
+    extraOptions,
+  );
+
+  const data = result.data as { access: string } | undefined;
+  if (data?.access) {
+    tokens.save(data.access);
+    return true;
+  }
+
+  // refresh тоже истёк или отозван — выходим из аккаунта
+  tokens.clear();
+  return false;
+};
+
+const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
+  args,
+  api,
+  extraOptions,
+) => {
+  let result = await rawBaseQuery(args, api, extraOptions);
+
+  const url = typeof args === 'string' ? args : args.url;
+  // 401 на логине — это неверный пароль, а не истёкший токен
+  const isAuthRequest = url.startsWith('/auth/jwt/');
+
+  if (result.error?.status === 401 && !isAuthRequest) {
+    // если обновление уже идёт — ждём его, а не запускаем второе
+    refreshPromise ??= refreshAccessToken(api, extraOptions).finally(() => {
+      refreshPromise = null;
+    });
+
+    await refreshPromise;
+    // Повторяем исходный запрос ОДИН раз:
+    // - refresh удался — уйдёт уже с новым access;
+    // - не удался — токены удалены, запрос уйдёт как от гостя:
+    //   публичный (посты, регистрация) пройдёт, закрытый снова получит 401
+    result = await rawBaseQuery(args, api, extraOptions);
+  }
+
+  return result;
+};
+
+export const baseApi = createApi({
+  reducerPath: 'api',
+  baseQuery: baseQueryWithReauth,
+  // «ярлыки» для кэша: по ним RTK Query понимает, что пора перезапросить
+  tagTypes: ['blog'],
+  endpoints: () => ({}),
+});
+```
+
+Что здесь важно:
+
+1. **`rawBaseQuery`** — обычный `fetchBaseQuery`, как раньше. `baseQueryWithReauth` вызывает его и решает, что делать с `401`.
+2. **На `/auth/jwt/...` не обновляем**: `401` от логина означает «неверный пароль», обновлять тут нечего.
+3. **Один refresh на всех.** Страница может отправить 3 запроса сразу, и все три получат `401`. Без `refreshPromise` ушло бы 3 запроса на `/auth/jwt/refresh/`. Первый упавший запрос создаёт промис, остальные ждут его же. `??=` — «присвоить, если сейчас `null`».
+4. **Повторяем исходный запрос один раз** с теми же `args`. Если refresh удался, `prepareHeaders` подставит уже новый `access`.
+5. **Не удался — `tokens.clear()`**: `AuthProvider` услышит событие, `isAuth` станет `false`, `ProtectedRoute` отправит на логин.
+6. **Почему повторяем и после неудачи?** Сервер отвечает `401` на **любой** запрос с испорченным или истёкшим токеном в заголовке, даже на публичный: список постов, регистрацию. После `tokens.clear()` повтор уйдёт без заголовка, как от гостя, и публичный запрос пройдёт. Закрытый снова получит `401`, и на этом всё: третьей попытки нет.
+
+Сгенерированные хуки (`blogApi.generated.ts`) ничего не знают про обновление токенов и ничего менять в них не нужно: все запросы идут через `baseQuery`.
+
+### Страница логина
+
+Версия из 6.10, но токены сохраняет `login` из контекста, а после входа возвращаем пользователя туда, куда он шёл. Внизу ссылка на регистрацию — её сделаем в 8.7. Файл называем `index.tsx`, как у `ActivatePage`: тогда импорт короче — `./pages/LoginPage`.
+
+`src/pages/LoginPage/index.tsx`
+
+```tsx
+import { useState, type FormEvent } from 'react';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router';
+import { Alert, Box, Button, TextField, Typography } from '@mui/material';
+import { useAuthJwtCreateCreateMutation } from '../../store/api/blogApi.generated';
+import { useAuth } from '../../context/AuthContext';
+import { PATHS } from '../../paths';
+
+export const LoginPage = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuth, login } = useAuth();
+
+  // куда вернуть после входа: ProtectedRoute кладёт адрес в state
+  const from = (location.state as { from?: string } | null)?.from ?? '/';
+
+  const [createToken, { isLoading, isError }] = useAuthJwtCreateCreateMutation();
+
+  // уже вошли — на странице логина делать нечего
+  if (isAuth) return <Navigate to={from} replace />;
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      // POST /auth/jwt/create/ → { access, refresh }
+      const { access, refresh } = await createToken({
+        tokenObtainPairRequest: { email, password },
+      }).unwrap();
+
+      login(access, refresh);
+      navigate(from, { replace: true });
+    } catch {
+      // ошибку покажет isError
+    }
+  };
+
+  return (
+    <Box component="form" onSubmit={handleSubmit} sx={{ display: 'grid', gap: 2, maxWidth: 360, py: 2, mx: 'auto' }}>
+      <Typography variant="h4">Вход</Typography>
+      <TextField label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <TextField
+        label="Пароль"
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+      {isError && <Alert severity="error">Неверный email или пароль</Alert>}
+      <Button type="submit" variant="contained" disabled={isLoading}>
+        Войти
+      </Button>
+      <Typography variant="body2">
+        Нет аккаунта? <Link to={PATHS.register()}>Зарегистрироваться</Link>
+      </Typography>
+    </Box>
+  );
+};
+```
+
+`src/paths.ts`
+
+```ts
+export const PATHS = {
+  // ...
+  login: () => '/login',
+};
+```
+
+`src/App.tsx`
+
+```tsx
+import { LoginPage } from './pages/LoginPage';
+
+// внутри <Route element={<Layout />}>, НЕ внутри ProtectedRoute
+<Route path={PATHS.login()} element={<LoginPage />} />
+```
+
+### ProtectedRoute: на логин, а не на 404
+
+`src/components/ProtectedRoute/ProtectedRoute.tsx`
+
+```tsx
+import { Navigate, Outlet, useLocation } from 'react-router';
+import { PATHS } from '../../paths';
+
+interface ProtectedRouteProps {
+  isAllowed: boolean; // Флаг авторизации
+  redirectPath?: string; // куда отправить, если нельзя
+}
+
+export const ProtectedRoute = ({ isAllowed, redirectPath = PATHS.login() }: ProtectedRouteProps) => {
+  const location = useLocation();
+
+  if (!isAllowed) {
+    // запоминаем, куда шёл пользователь, — LoginPage вернёт его туда
+    return <Navigate to={redirectPath} replace state={{ from: location.pathname }} />;
+  }
+
+  return <Outlet />;
+};
+```
+
+`state` — данные, которые передаются вместе с переходом, но не видны в адресе. `LoginPage` достаёт оттуда `from` через `useLocation()`. `replace` — заменяем запись в истории, чтобы кнопка «Назад» не возвращала на закрытую страницу и обратно на логин.
+
+### Кнопка входа и выхода
+
+`src/components/Header/IsAuthToggle.tsx`
+
+```tsx
+import { IconButton, Tooltip } from '@mui/material';
+import LoginIcon from '@mui/icons-material/Login';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { Link } from 'react-router';
+import { useAuth } from '../../context/AuthContext';
+import { useAppDispatch } from '../../store/hooks';
+import { baseApi } from '../../store/api/baseApi';
+import { PATHS } from '../../paths';
+
+export const IsAuthToggle = () => {
+  const { isAuth, logout } = useAuth();
+  const dispatch = useAppDispatch();
+
+  if (!isAuth) {
+    return (
+      <Tooltip title="Войти">
+        <IconButton color="inherit" component={Link} to={PATHS.login()}>
+          <LoginIcon />
+        </IconButton>
+      </Tooltip>
+    );
+  }
+
+  const handleLogout = () => {
+    logout();
+    // чистим кэш RTK Query: в нём данные, загруженные от имени прошлого пользователя
+    dispatch(baseApi.util.resetApiState());
+  };
+
+  return (
+    <Tooltip title="Выйти">
+      <IconButton color="inherit" onClick={handleLogout}>
+        <LogoutIcon />
+      </IconButton>
+    </Tooltip>
+  );
+};
+```
+
+`resetApiState()` — очистить весь кэш RTK Query. Без этого после выхода и входа другим пользователем на экране на секунду будут данные прошлого.
+
+Поток целиком:
+
+```none
+LoginPage: createToken({ email, password })  →  POST /auth/jwt/create/
+        ↓ { access, refresh }
+login(access, refresh) → tokens.save → событие auth-change → isAuth = true
+        ↓
+useBlogPostsListQuery → baseQueryWithReauth → prepareHeaders: Bearer <access>
+        ↓ 401 (access истёк)
+refreshAccessToken → POST /auth/jwt/refresh/ → tokens.save(новый access) → повтор запроса
+        ↓ 401 (refresh истёк)
+tokens.clear() → auth-change → isAuth = false → ProtectedRoute → /login
+```
+
+---
+
+## 8.7. Практика: регистрация
+
+Регистрацию мы уже делали руками в Swagger (7.10). Теперь — страница в приложении. Путь пользователя целиком:
+
+```none
+/register  → POST /auth/users/ { username, email, password, course_group }  → 201
+        ↓ «Проверьте почту»
+письмо → /activate/:uid/:token → POST /auth/users/activation/   → 204   (7.10)
+        ↓
+/login     → POST /auth/jwt/create/ { email, password }        → { access, refresh }   (8.6)
+```
+
+После регистрации пользователь **не залогинен**: аккаунт не активен, `POST /auth/jwt/create/` ответит `401`, пока не открыта ссылка из письма. Поэтому токены здесь не сохраняем, а показываем «Проверьте почту».
+
+| Поле           | Обязательное | Правила сервера                                          |
+| -------------- | ------------ | -------------------------------------------------------- |
+| `username`     | да           | до 150 символов: латиница, цифры и `@ . + - _`, без пробелов |
+| `email`        | да           | правильный email, ещё не занятый                         |
+| `password`     | да           | не короче 8 символов, не только цифры, не слишком простой |
+| `course_group` | нет          | `id` группы из `GET /blog/groups/` или `null`            |
+
+### Хуки из Swagger
+
+Регистрация, повторное письмо, активация — всё это эндпоинты `/auth/users/...`. Чтобы не перечислять каждый, берём их в генератор одним шаблоном:
+
+`openapi-config.ts`
+
+```ts
+// берём только нужное: посты, группы, логин и всё про пользователей
+// (/^authUsers/ — регистрация, активация, повторное письмо, me, смена пароля…)
+filterEndpoints: [/^blog/, /^authJwt/, /^authUsers/],
+```
+
+*Терминал*
+
+```bash
+npm run api:generate
+```
+
+Появились `useAuthUsersCreateMutation` (регистрация) и `useAuthUsersResendActivationCreateMutation` (письмо ещё раз), а заодно `useAuthUsersMeRetrieveQuery`, `useAuthUsersSetPasswordCreateMutation` и другие — пригодятся для профиля. Шаблон `/^authUsersActivation/` из 7.10 больше не нужен: `/^authUsers/` его уже покрывает.
+
+> Хук для групп `useBlogGroupsListQuery` уже есть: его даёт `/^blog/`. Групп 20, а по умолчанию сервер отдаёт по 10, поэтому просим `limit: 100`.
+
+### Ошибки валидации
+
+На неверные данные сервер отвечает `400` и пишет ошибки **по полям**:
+
+```json
+{
+  "username": ["Enter a valid username. This value may contain only letters, numbers, and @/./+/-/_ characters."],
+  "email": ["user with this email already exists."],
+  "password": ["This password is too short. It must contain at least 8 characters."]
+}
+```
+
+Ключ — имя поля, значение — **массив** строк: у одного поля может быть несколько ошибок. Ошибки, которые не относятся к одному полю, приходят в `non_field_errors`. Показываем каждую под своим полем через `error` и `helperText` у `TextField`.
+
+### Formik
+
+В форме пять полей, и у каждого — значение, ошибка и флаг «пользователь уже трогал поле». На `useState` это пятнадцать состояний или самописный объект с общим `handleChange`. **Formik** — библиотека, которая хранит всё это за нас и запускает проверки.
+
+*Терминал*
+
+```bash
+npm install formik
+```
+
+Главное, что возвращает `useFormik`:
+
+| Что                                  | Зачем                                                                    |
+| ------------------------------------ | ------------------------------------------------------------------------ |
+| `formik.values`                      | значения полей: `{ username: '', email: '', ... }`                       |
+| `formik.errors`                      | ошибки, **строка** на поле: `{ email: 'Введите email' }`                 |
+| `formik.touched`                     | поля, которые пользователь уже трогал: ушёл с поля или нажал «Отправить» |
+| `formik.status`                      | любое своё значение — положим туда общую ошибку формы                    |
+| `formik.isSubmitting`                | `true`, пока выполняется `async onSubmit`                                |
+| `formik.handleChange` / `handleBlur` | обработчики для полей, находят поле по атрибуту `name`                   |
+| `formik.getFieldProps('email')`      | `{ name, value, onChange, onBlur }` для поля одной строкой               |
+| `formik.handleSubmit`                | для `onSubmit` формы: сам делает `preventDefault` и запускает проверки   |
+
+Что происходит при отправке:
+
+```none
+«Зарегистрироваться» → formik.handleSubmit
+        ↓ все поля помечаются touched
+validate(values) → есть ошибки? → показываем под полями, onSubmit НЕ вызывается
+        ↓ ошибок нет
+onSubmit(values, helpers) → isSubmitting = true → POST /auth/users/
+        ↓ 400
+helpers.setErrors({ email: '...' }) → ошибки сервера под полями
+```
+
+### Страница
+
+`src/pages/RegisterPage/index.tsx`
+
+```tsx
+import { Link, Navigate } from 'react-router';
+import { useFormik, type FormikErrors } from 'formik';
+import { Alert, Box, Button, MenuItem, TextField, Typography } from '@mui/material';
+import {
+  useAuthUsersCreateMutation,
+  useAuthUsersResendActivationCreateMutation,
+  useBlogGroupsListQuery,
+} from '../../store/api/blogApi.generated';
+import { useAuth } from '../../context/AuthContext';
+import { PATHS } from '../../paths';
+
+interface RegisterFormValues {
+  username: string;
+  email: string;
+  password: string;
+  passwordRepeat: string;
+  courseGroup: string; // в селекте значение — строка, серверу отдадим число
+}
+
+// Ошибки валидации от сервера: { email: ['...'], password: ['...', '...'] }
+type ServerErrors = Partial<Record<string, string[]>>;
+
+const getServerErrors = (error: unknown): ServerErrors | null => {
+  const { status, data } = (error ?? {}) as { status?: number; data?: unknown };
+  return status === 400 && data && typeof data === 'object' ? (data as ServerErrors) : null;
+};
+
+// Проверки до отправки: всё, что можно проверить без сервера
+const validate = (values: RegisterFormValues) => {
+  const errors: FormikErrors<RegisterFormValues> = {};
+
+  if (!values.username) errors.username = 'Введите имя пользователя';
+  else if (!/^[\w.@+-]+$/.test(values.username)) errors.username = 'Только латиница, цифры и @ . + - _';
+
+  if (!values.email) errors.email = 'Введите email';
+
+  if (values.password.length < 8) errors.password = 'Не короче 8 символов';
+  else if (/^\d+$/.test(values.password)) errors.password = 'Пароль не может состоять только из цифр';
+
+  if (values.passwordRepeat !== values.password) errors.passwordRepeat = 'Пароли не совпадают';
+
+  return errors;
+};
+
+export const RegisterPage = () => {
+  const { isAuth } = useAuth();
+
+  // группы для выпадающего списка: их 20, берём все сразу
+  const { data: groups } = useBlogGroupsListQuery({ limit: 100 });
+
+  // POST /auth/users/ → 201 { id, username, email, course_group }
+  const [register, { isSuccess }] = useAuthUsersCreateMutation();
+  // POST /auth/users/resend_activation/ { email } — письмо ещё раз
+  const [resend, { isLoading: isResending, isSuccess: isResent }] =
+    useAuthUsersResendActivationCreateMutation();
+
+  const formik = useFormik<RegisterFormValues>({
+    initialValues: {
+      username: '',
+      email: '',
+      password: '',
+      passwordRepeat: '',
+      courseGroup: '',
+    },
+    validate,
+    // сюда попадаем, только если validate не нашёл ошибок
+    onSubmit: async (values, { setErrors, setStatus }) => {
+      setStatus(undefined);
+      try {
+        await register({
+          customUserCreateRequest: {
+            username: values.username,
+            email: values.email,
+            password: values.password,
+            course_group: values.courseGroup ? Number(values.courseGroup) : null,
+          },
+        }).unwrap();
+      } catch (error) {
+        const serverErrors = getServerErrors(error);
+
+        if (!serverErrors) {
+          // 500, нет сети и т. п. — не ошибка конкретного поля
+          setStatus('Не удалось зарегистрироваться. Попробуйте позже.');
+          return;
+        }
+
+        // массивы сервера → строки Formik, имена полей сервера → наши
+        setErrors({
+          username: serverErrors.username?.join(' '),
+          email: serverErrors.email?.join(' '),
+          password: serverErrors.password?.join(' '),
+          courseGroup: serverErrors.course_group?.join(' '),
+        });
+        // ошибка не по полю
+        setStatus(serverErrors.non_field_errors?.join(' '));
+      }
+    },
+  });
+
+  if (isAuth) return <Navigate to="/" replace />;
+
+  // Успех: аккаунт создан, но не активен — нужна ссылка из письма (7.10)
+  if (isSuccess) {
+    const { email } = formik.values;
+
+    return (
+      <Box sx={{ display: 'grid', gap: 2, maxWidth: 420, py: 2, mx: 'auto', justifyItems: 'start' }}>
+        <Typography variant="h4">Проверьте почту</Typography>
+        <Alert severity="success">
+          Мы отправили письмо на <b>{email}</b>. Перейдите по ссылке из письма, чтобы
+          активировать аккаунт, затем войдите.
+        </Alert>
+        <Button
+          onClick={() => resend({ sendEmailResetRequest: { email } })}
+          disabled={isResending || isResent}
+        >
+          {isResent ? 'Письмо отправлено ещё раз' : 'Письмо не пришло? Отправить ещё раз'}
+        </Button>
+        <Button component={Link} to={PATHS.login()} variant="contained">
+          Ко входу
+        </Button>
+      </Box>
+    );
+  }
+
+  // ошибку поля показываем, только когда пользователь его уже трогал
+  const errorText = (field: keyof RegisterFormValues) =>
+    formik.touched[field] ? formik.errors[field] : undefined;
+
+  return (
+    <Box
+      component="form"
+      onSubmit={formik.handleSubmit}
+      noValidate
+      sx={{ display: 'grid', gap: 2, maxWidth: 360, py: 2, mx: 'auto' }}
+    >
+      <Typography variant="h4">Регистрация</Typography>
+      <TextField
+        label="Имя пользователя"
+        {...formik.getFieldProps('username')}
+        required
+        error={Boolean(errorText('username'))}
+        helperText={errorText('username') ?? 'Латиница, цифры и @ . + - _'}
+      />
+      <TextField
+        label="Email"
+        type="email"
+        {...formik.getFieldProps('email')}
+        required
+        error={Boolean(errorText('email'))}
+        helperText={errorText('email')}
+      />
+      <TextField
+        label="Пароль"
+        type="password"
+        {...formik.getFieldProps('password')}
+        required
+        error={Boolean(errorText('password'))}
+        helperText={errorText('password') ?? 'Не короче 8 символов, не только цифры'}
+      />
+      <TextField
+        label="Повторите пароль"
+        type="password"
+        {...formik.getFieldProps('passwordRepeat')}
+        required
+        error={Boolean(errorText('passwordRepeat'))}
+        helperText={errorText('passwordRepeat') ?? ' '}
+      />
+      <TextField
+        select
+        label="Группа"
+        name="courseGroup"
+        value={formik.values.courseGroup}
+        onChange={formik.handleChange}
+        error={Boolean(errorText('courseGroup'))}
+        helperText={errorText('courseGroup')}
+      >
+        <MenuItem value="">Без группы</MenuItem>
+        {groups?.results?.map((group) => (
+          <MenuItem key={group.id} value={String(group.id)}>
+            {group.name}
+          </MenuItem>
+        ))}
+      </TextField>
+
+      {formik.status && <Alert severity="error">{formik.status}</Alert>}
+
+      <Button type="submit" variant="contained" disabled={formik.isSubmitting}>
+        Зарегистрироваться
+      </Button>
+      <Typography variant="body2">
+        Уже есть аккаунт? <Link to={PATHS.login()}>Войти</Link>
+      </Typography>
+    </Box>
+  );
+};
+```
+
+Что здесь важно:
+
+1. **`useFormik` — тоже хук**, поэтому вызываем его до раннего `return` (`if (isAuth) ...`), как и остальные хуки.
+2. **`validate` — проверки на фронтенде.** Всё, что можно проверить без сервера: пустые поля, символы в `username`, длина пароля, совпадение паролей. Пока `validate` возвращает ошибки, `onSubmit` не вызывается и запрос не уходит.
+3. **Сервер всё равно главный.** Занятый email или «слишком простой пароль» знает только он. Его ошибки — массивы, а Formik ждёт строку на поле: склеиваем через `.join(' ')` и кладём через `setErrors`. Имена полей у сервера и формы могут отличаться: `course_group` → `courseGroup`. Как только пользователь поменяет любое поле, Formik снова запустит `validate`, и ошибки сервера пропадут — пользователь их уже увидел и исправляет.
+4. **`setStatus`** — для ошибки, которая не относится к полю: `non_field_errors`, `500`, нет сети. Выводим `formik.status` в `Alert`.
+5. **Ошибку показываем только у тронутого поля** — `formik.touched[field]`. Иначе пользователь откроет страницу, а все поля уже красные. При нажатии «Зарегистрироваться» Formik помечает тронутыми все поля.
+6. **`{...formik.getFieldProps('username')}`** — то же, что `name`, `value`, `onChange` и `onBlur` по отдельности. `name` должен совпадать с ключом в `initialValues`, иначе значение запишется не туда. У селекта `onBlur` не передаём: MUI вызывает его на элементе без `name`, и Formik ругается в консоли.
+7. **`noValidate`** у формы отключает встроенные подсказки браузера для `required` и `type="email"`, чтобы ошибки показывал только Formik и одинаково во всех браузерах. `required` у полей оставляем ради звёздочки в подписи.
+8. **`course_group`** в селекте — строка (`'3'`), а серверу нужно число или `null`: `Number(values.courseGroup)`.
+9. **`isSuccess`** — регистрация прошла, вместо формы показываем «Проверьте почту». Если письма нет, кнопка отправляет его повторно: `POST /auth/users/resend_activation/ { email }`.
+10. **`helperText=" "`** у повтора пароля — пустая строка-пробел держит место под подсказку, и форма не прыгает, когда появляется ошибка.
+
+`src/paths.ts`
+
+```ts
+export const PATHS = {
+  // ...
+  login: () => '/login',
+  register: () => '/register',
+};
+```
+
+`src/App.tsx`
+
+```tsx
+import { RegisterPage } from './pages/RegisterPage';
+
+// рядом с /login, НЕ внутри ProtectedRoute
+<Route path={PATHS.register()} element={<RegisterPage />} />
+```
+
+> Не регистрируйте десятки тестовых аккаунтов на настоящую почту: проверяйте ошибки валидации (они не создают пользователя), а полный путь пройдите один раз. И не оставляйте в `initialValues` свои email и пароль — они уедут в репозиторий.
+
+---
+
+## 8.8. OAuth 2: «Войти через Google»
+
+### Задача
+
+Хотим, чтобы пользователь вошёл в наш блог через Google. Просить у него пароль от Google нельзя: мы получим доступ ко всему аккаунту, а пользователь должен нам доверять. **OAuth 2** — протокол, по которому Google сам спрашивает пользователя «Разрешить блогу видеть ваш email?» и выдаёт нам токен с **только этим** доступом.
+
+Аналогия — ключ от машины для парковщика: заводит и паркует, но не открывает багажник. Ключ даёт хозяин (пользователь), а не сам парковщик берёт.
+
+### Участники
+
+| Роль                        | Кто это у нас                     |
+| --------------------------- | --------------------------------- |
+| **Resource Owner**          | пользователь, владелец аккаунта    |
+| **Client**                  | наше приложение (блог)             |
+| **Authorization Server**    | `accounts.google.com` — спрашивает пароль и выдаёт токены |
+| **Resource Server**         | API Google с данными пользователя  |
+
+Перед началом приложение регистрируют у провайдера (Google Cloud Console, GitHub → Settings → Developer settings) и получают `client_id` и разрешённый `redirect_uri` — адрес, куда провайдер вернёт пользователя.
+
+### Authorization Code + PKCE
+
+Главный и рекомендуемый сценарий (grant type) для сайтов и мобильных приложений:
+
+```none
+1. Пользователь жмёт «Войти через Google»
+        ↓
+2. Наш сайт перенаправляет на Google:
+   https://accounts.google.com/o/oauth2/v2/auth
+     ?response_type=code
+     &client_id=my-blog
+     &redirect_uri=https://blog.by/oauth/callback
+     &scope=openid email profile          ← что просим
+     &state=x7Kp2...                      ← случайная строка, защита от подделки
+     &code_challenge=E9Melhoa...          ← PKCE
+     &code_challenge_method=S256
+        ↓
+3. Google: вход + экран «Разрешить блогу доступ к email и профилю?» → «Разрешить»
+        ↓
+4. Google возвращает на наш сайт с одноразовым кодом:
+   https://blog.by/oauth/callback?code=4/0AY0e-g7...&state=x7Kp2...
+        ↓
+5. Проверяем, что state совпал. Меняем code на токены:
+   POST https://oauth2.googleapis.com/token { code, code_verifier, client_id, redirect_uri }
+        ↓
+6. Ответ: { access_token, refresh_token, id_token, expires_in }
+```
+
+Зачем такие сложности, почему не отдать токен сразу в шаге 4? Адрес с параметрами остаётся в истории браузера, логах серверов, заголовке `Referer`. Поэтому в адресе только **одноразовый код**, который сам по себе бесполезен.
+
+**PKCE** (Proof Key for Code Exchange, «пикси») — защита на случай, если код всё-таки перехватили:
+
+```none
+code_verifier  = случайная строка, храним у себя, никому не показываем
+code_challenge = base64url(SHA-256(code_verifier))   → отправляем в шаге 2
+
+В шаге 5 отправляем сам code_verifier. Провайдер считает от него SHA-256
+и сравнивает с code_challenge из шага 2. Перехватчик кода verifier не знает.
+```
+
+**`state`** — случайная строка, которую мы отправили и должны получить обратно. Если пришёл чужой `state`, это не наш вход: кто-то подсовывает нам свой код (CSRF).
+
+### Код на фронтенде
+
+Наш учебный сервер OAuth не поддерживает, поэтому адреса ниже — для примера. Шаг 2 — отправить пользователя к провайдеру:
+
+`src/shared/oauth.ts`
+
+```ts
+// Пример для учебного провайдера. У каждого провайдера свои адреса — смотрите его документацию
+const AUTHORIZE_URL = 'https://auth.example.com/oauth/authorize';
+const CLIENT_ID = 'my-blog-spa'; // выдают при регистрации приложения у провайдера
+const REDIRECT_URI = `${window.location.origin}/oauth/callback`;
+
+// случайная строка в base64url
+const randomString = (bytes = 32) =>
+  btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(bytes))))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+
+// code_challenge = base64url(SHA-256(code_verifier))
+const sha256Base64Url = async (text: string) => {
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return btoa(String.fromCharCode(...new Uint8Array(hash)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+};
+
+// Шаг 1: отправляем пользователя на страницу входа провайдера
+export const startOAuthLogin = async () => {
+  const state = randomString(16); // защита от подделки ответа (CSRF)
+  const codeVerifier = randomString(32); // секрет PKCE, остаётся у нас
+
+  // переживут переход на чужой сайт и обратно
+  sessionStorage.setItem('oauth_state', state);
+  sessionStorage.setItem('oauth_verifier', codeVerifier);
+
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: CLIENT_ID,
+    redirect_uri: REDIRECT_URI,
+    scope: 'openid email profile',
+    state,
+    code_challenge: await sha256Base64Url(codeVerifier),
+    code_challenge_method: 'S256',
+  });
+
+  window.location.assign(`${AUTHORIZE_URL}?${params}`);
+};
+```
+
+Шаги 4–6 — страница, куда провайдер возвращает пользователя:
+
+`src/pages/OAuthCallbackPage/OAuthCallbackPage.tsx`
+
+```tsx
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
+import { Alert, CircularProgress } from '@mui/material';
+import { useAuth } from '../../context/AuthContext';
+
+// /oauth/callback?code=...&state=... — сюда провайдер возвращает пользователя
+export const OAuthCallbackPage = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const [error, setError] = useState('');
+  const isSent = useRef(false); // code одноразовый, а StrictMode запустит эффект дважды
+
+  useEffect(() => {
+    if (isSent.current) return;
+    isSent.current = true;
+
+    const code = searchParams.get('code');
+    const state = searchParams.get('state');
+    const codeVerifier = sessionStorage.getItem('oauth_verifier');
+
+    // state не совпал — ответ не на наш запрос
+    if (!code || !codeVerifier || state !== sessionStorage.getItem('oauth_state')) {
+      setError('Ссылка входа недействительна');
+      return;
+    }
+
+    // Шаг 2: меняем code на токены. Обычно через свой бэкенд, он же выдаёт свои JWT
+    fetch('/api/auth/oauth/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, code_verifier: codeVerifier }),
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error(String(response.status));
+        return response.json() as Promise<{ access: string; refresh: string }>;
+      })
+      .then(({ access, refresh }) => {
+        login(access, refresh);
+        navigate('/', { replace: true });
+      })
+      .catch(() => setError('Не удалось войти'))
+      .finally(() => {
+        sessionStorage.removeItem('oauth_state');
+        sessionStorage.removeItem('oauth_verifier');
+      });
+  }, [searchParams, navigate, login]);
+
+  return error ? <Alert severity="error">{error}</Alert> : <CircularProgress />;
+};
+```
+
+Обычно шаг 5 делает **наш бэкенд**: получает от фронтенда `code`, сам меняет его у Google на токены, узнаёт email пользователя, находит или создаёт его у себя и выдаёт **свои** `access` и `refresh` — такие же, как при обычном логине. Дальше всё работает как в 8.6.
+
+> На практике руками это пишут редко: есть готовые библиотеки — `@react-oauth/google`, `oidc-client-ts`, SDK Auth0, Keycloak, Firebase Auth. Но что происходит внутри, полезно понимать: на собеседованиях спрашивают.
+
+### Другие сценарии (grant types)
+
+| Сценарий                       | Когда                                      | Статус                    |
+| ------------------------------ | ------------------------------------------ | ------------------------- |
+| **Authorization Code + PKCE**  | сайты, SPA, мобильные приложения           | рекомендуется             |
+| **Client Credentials**         | сервер ↔ сервер, без пользователя          | рекомендуется             |
+| **Device Code**                | телевизор, консоль: «введите код на телефоне» | рекомендуется          |
+| **Refresh Token**              | обновить `access_token`                    | то же, что 8.4            |
+| Implicit                       | токен сразу в адресе, для SPA              | **устарел**, не использовать |
+| Password                       | приложение само спрашивает логин и пароль  | **устарел**, не использовать |
+
+### OAuth 2, OpenID Connect и JWT
+
+- **OAuth 2** — про **доступ**: «блогу можно читать email». Это протокол, то есть порядок действий.
+- **OpenID Connect (OIDC)** — надстройка над OAuth 2 про **вход**: добавляет `scope=openid` и `id_token` с данными пользователя (кто вошёл).
+- **JWT** — **формат** токена. `id_token` в OIDC всегда JWT. `access_token` в OAuth может быть JWT, а может быть просто случайной строкой.
+
+То есть «OAuth или JWT?» — неправильный вопрос: OAuth — порядок действий, JWT — формат строки, они часто работают вместе.
+
+---
+
+## 8.9. Проверяем
+
+1. `npm run dev`, открываем `/register`, жмём «Зарегистрироваться» с пустой формой — ошибки под полями, а в **Network** запроса нет: сработал `validate`. Пароли в двух полях разные — «Пароли не совпадают». Вводим уже занятый email — в **Network** ответ `400`, текст сервера под полем Email.
+2. Регистрируемся по-настоящему — «Проверьте почту», ответ `201`. Пробуем войти до активации — «Неверный email или пароль» (`401`).
+3. Открываем ссылку из письма на `localhost` (7.10), затем входим.
+4. Выходим и открываем `/posts` — попадаем на `/login`.
+5. Входим. Возвращает на `/posts`. В **Application → Local Storage** — `access` и `refresh`.
+6. Во вкладке **Network** у запроса `posts/` есть заголовок `Authorization: Bearer eyJ...`.
+7. Копируем `access` на [jwt.io](https://jwt.io) — видим `user_id` и `exp`.
+8. Портим `access` в Local Storage (меняем пару символов) и обновляем список. В Network: `posts/` → `401`, `refresh/` → `200`, снова `posts/` → `200`. Пользователь ничего не заметил.
+9. Портим и `refresh`, и `access`. Следующий запрос: `401`, `refresh/` → `401`, токены удалены, нас перекинуло на `/login`.
+10. Открываем сайт во второй вкладке, жмём «Выйти» в первой — вторая тоже разлогинилась (событие `storage`).
+11. Неверный пароль — «Неверный email или пароль», запроса на `refresh/` нет.
+
+---
+
+## 8.10. Итоговая структура
+
+```
+openapi-config.ts              # /^authUsers/ — регистрация, повторное письмо, me…
+package.json                   # + formik
+src/
+├── shared/
+│   ├── jwt.ts                 # decodeJwt, isTokenExpired
+│   ├── tokens.ts              # save / clear / getAccess / getRefresh + событие auth-change
+│   └── oauth.ts               # пример: startOAuthLogin (PKCE)
+├── context/
+│   └── AuthContext.tsx        # isAuth = есть живой refresh; login(access, refresh), logout()
+├── store/api/
+│   └── baseApi.ts             # Bearer в заголовок + на 401 refresh и повтор
+├── components/
+│   ├── ProtectedRoute/        # нет входа → /login, state.from
+│   └── Header/IsAuthToggle.tsx  # «Войти» / «Выйти» + resetApiState
+└── pages/
+    ├── LoginPage/             # POST /auth/jwt/create/ → обратно на from
+    ├── RegisterPage/          # Formik: validate + ошибки сервера по полям → «Проверьте почту»
+    └── OAuthCallbackPage/     # пример: проверка state, code → токены
+```
+
+---
+
+## 8.11. Частые ошибки
+
+- **Путаем `401` и `403`** — на `403` отправляем на логин, а пользователь уже вошёл, ему просто нельзя. `401` — кто ты?, `403` — тебе нельзя.
+- **Храним в payload JWT секреты** — payload читает кто угодно через `atob`. Подпись защищает от изменения, а не от чтения.
+- **Проверяем подпись JWT на фронтенде** — для этого нужен секрет сервера, а в коде фронтенда его увидит любой. Фронтенд только читает `exp` и данные.
+- **`exp` сравниваем с `Date.now()` напрямую** — `exp` в секундах, `Date.now()` в миллисекундах. Нужно `exp * 1000`.
+- **Отправляем `refresh` в заголовке `Authorization`** — сервер ответит `401`: там ждут `access`. `refresh` уходит только в тело `/auth/jwt/refresh/`.
+- **Забыли `Bearer `** или пробел после него: `Authorization: Bearer${token}` — сервер не узнает заголовок.
+- **Обновляем токен на `401` от логина** — неверный пароль превращается в лишний запрос на `refresh/` (8.6, пункт 2).
+- **Каждый упавший запрос делает свой refresh** — 3 параллельных `401` → 3 запроса на `refresh/`. Один общий промис `refreshPromise`.
+- **Бесконечный цикл обновления** — запрос на `refresh/` сам получил `401` и снова пошёл обновлять. Повторяем запрос только один раз, при неудаче — `tokens.clear()`.
+- **После неудачного refresh не повторяем запрос** — старый токен в заголовке ломает даже публичные запросы: посты и регистрация отвечают `401`. После `tokens.clear()` повторяем один раз как гость.
+- **Сохраняем токены после регистрации** — их там нет: `POST /auth/users/` возвращает только данные пользователя. Входить можно только после активации.
+- **Ждём ошибку поля строкой** — сервер присылает массив: `{ "email": ["..."] }`. Выводим через `.join(' ')`.
+- **`name` поля не совпадает с ключом в `initialValues`** — Formik запишет значение не туда, поле «не печатается».
+- **Показываем `formik.errors` без `touched`** — пользователь открыл страницу, а все поля уже красные.
+- **Кладём в `setErrors` массив сервера** — Formik ждёт строку на поле: `.join(' ')`.
+- **Ждём, что `onSubmit` вызовется при ошибках `validate`** — не вызовется: пока есть ошибки, запрос не уходит. Так и задумано.
+- **`course_group: '3'` строкой** — сервер ждёт число или `null`.
+- **`RegisterPage` внутри `ProtectedRoute`** — незалогиненный пользователь не попадёт на регистрацию.
+- **Выход без `resetApiState()`** — в кэше RTK Query остались данные прошлого пользователя.
+- **Ждём событие `storage` в той же вкладке** — оно приходит только в другие. Для своей вкладки — своё событие.
+- **`isAuth` по `access`** — `access` истёк через 5 минут, и пользователя выкинуло, хотя `refresh` живой. Смотрим на `refresh`.
+- **`LoginPage` внутри `ProtectedRoute`** — незалогиненного туда не пустит, а залогиненному она не нужна: бесконечный редирект.
+- **Токен в `console.log` или в адресе страницы** — попадёт в логи, историю и `Referer`. Токен — как пароль.
+- **OAuth без `state`** — злоумышленник может подсунуть свой `code`, и пользователь войдёт в чужой аккаунт.
+- **Implicit flow в новом проекте** — устарел. Для SPA — Authorization Code + PKCE.
+- **`client_secret` в коде фронтенда** — любой увидит его в DevTools. Секрет живёт только на бэкенде, фронтенду хватает PKCE.
